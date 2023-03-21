@@ -13,7 +13,7 @@
     "url": "git+https://github.com/prifilabs/shield-ethereum-js.git"
   },
   "author": "Thierry Sans",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/prifilabs/shield-ethereum-js/issues"
   },
