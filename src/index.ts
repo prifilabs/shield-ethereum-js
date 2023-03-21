@@ -1,7 +1,19 @@
-import { Signer, Contract, constants, utils } from "ethers";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import {
+  Signer,
+  Contract,
+  constants,
+  utils,
+  ContractFactory,
+  ContractInterface,
+  ContractTransaction,
+} from "ethers";
+import { Result } from "ethers/lib/utils";
+import { Shield__factory } from "../typechain-types";
+import { User } from "./types";
 
 // https://stackoverflow.com/questions/69721296/how-to-encode-integer-to-uint8array-and-back-to-integer-in-javascript
-function bytesToNumber(bytes) {
+function bytesToNumber(bytes: number | utils.BytesLike | utils.Hexable) {
   let byteArray = utils.arrayify(bytes);
   let result = 0;
   for (let i = 0; i < byteArray.length; i++) {
@@ -11,7 +23,7 @@ function bytesToNumber(bytes) {
   return result;
 }
 
-function getRolesFromBytes(bytes, allRoles) {
+function getRolesFromBytes(bytes: Uint8Array, allRoles: string[]) {
   let total = bytesToNumber(bytes);
   let roles = allRoles.filter((_, index) => {
     return bit_test(total, index);
@@ -20,18 +32,18 @@ function getRolesFromBytes(bytes, allRoles) {
 }
 
 // https://stackoverflow.com/a/8436459/9894569
-function bit_test(num, bit) {
+function bit_test(num: number, bit: number) {
   return (num >> bit) % 2 != 0;
 }
 
-function bit_set(num, bit) {
+function bit_set(num: number, bit: number) {
   return num | (1 << bit);
 }
 
-function getBytesFromRoles(roles, allRoles) {
+function getBytesFromRoles(roles: string[], allRoles: string[]) {
   let num = 0;
-  roles.forEach((role) => {
-    const index = allRoles.findIndex((val) => val === role);
+  roles.forEach((role: any) => {
+    const index = allRoles.findIndex((val: any) => val === role);
     if (index === -1) throw new Error("did not find role");
     num = bit_set(num, index);
   });
@@ -39,7 +51,7 @@ function getBytesFromRoles(roles, allRoles) {
 }
 
 // https://stackoverflow.com/questions/69721296/how-to-encode-integer-to-uint8array-and-back-to-integer-in-javascript
-function numberToBytes(number) {
+function numberToBytes(number: string | number | bigint | boolean) {
   const buffer = new ArrayBuffer(8);
   const byteArray = new DataView(buffer);
   byteArray.setBigUint64(0, BigInt(number), false);
@@ -110,43 +122,47 @@ export async function approveCredentials(
 
 export function encodeCredentials(credentials: Credentials): string {
   const { to, call, timestamp, approvals } = credentials;
-  return btoa(
-    JSON.stringify({ to, call, timestamp, approvals: approvals.map(btoa) })
-  );
+  return Buffer.from(
+    JSON.stringify({ to, call, timestamp, approvals })
+  ).toString("base64");
 }
 
 export function decodeCredentials(encodedCredentials: string): Credentials {
   const { to, call, timestamp, approvals } = JSON.parse(
-    atob(encodedCredentials)
+    Buffer.from(encodedCredentials, "base64").toString("utf-8")
   );
-  return { to, call, timestamp, approvals: approvals.map(atob) };
+  return { to, call, timestamp, approvals };
 }
 
-async function parseEvents(name, tx) {
+async function parseEvents(
+  name: string,
+  tx: ContractTransaction
+): Promise<Result> {
   const receipt = await tx.wait();
+  if (!receipt.events) throw new Error("receipt events undefined");
   const event = receipt.events.find((event) => event.event === name);
-  const args = event?.args;
+  const args = event.args;
   return args;
 }
 
 export async function getAllShieldAddresses(signer: Signer) {}
 
 export async function createShield(
-  signer,
-  name,
-  roles,
-  users,
-  policy,
-  factory?,
-  shield?
+  signer: Signer,
+  name: string,
+  roles: string[],
+  users: User[],
+  policy: string[][],
+  factory: Contract,
+  shield: Shield__factory
 ) {
   const _name = utils.formatBytes32String(name);
   const _roles = roles.map(utils.formatBytes32String);
-  const _users = users.map(function (user) {
+  const _users = users.map((user) => {
     const rolesAssigned = user.roles.map(utils.formatBytes32String);
     return { addr: user.addr, roles: getBytesFromRoles(rolesAssigned, _roles) };
   });
-  const _policy = policy.map(function (step) {
+  const _policy = policy.map((step) => {
     const rolesAssigned = step.map(utils.formatBytes32String);
     return getBytesFromRoles(rolesAssigned, _roles);
   });
@@ -157,7 +173,11 @@ export async function createShield(
   return createShieldInstance(signer, address, shield);
 }
 
-export async function createShieldInstance(signer, address, shield?) {
+export async function createShieldInstance(
+  signer: Signer,
+  address: string,
+  shield: Shield__factory
+) {
   let contract = new Contract(address, shield.interface, signer);
   return new Shield(contract, signer);
 }
@@ -176,27 +196,27 @@ export class Shield {
     return roles.map(utils.parseBytes32String);
   }
 
-  async createCredentialsForAddRoles(roles) {
+  async createCredentialsForAddRoles(roles: string[]) {
     const newRoles = roles.map(utils.formatBytes32String);
     return createCredentials(this.signer, this.contract, "addRoles", [
       newRoles,
     ]);
   }
 
-  async addRoles(roles, credentials) {
+  async addRoles(roles: string[], credentials: Credentials) {
     const newRoles = roles.map(utils.formatBytes32String);
     return this.contract.connect(this.signer).addRoles(newRoles, credentials);
   }
 
   async getUsers() {}
 
-  async getUser(address) {
+  async getUser(address: any) {
     const roles = await this.contract.getRoles();
     const bits = await this.contract.getUser(address);
     return getRolesFromBytes(bits, roles).map(utils.parseBytes32String);
   }
 
-  async createCredentialsForSetUser(address, roles) {
+  async createCredentialsForSetUser(address: any, roles: string[]) {
     const existingRoles = await this.contract.getRoles();
     const newRoles = getBytesFromRoles(
       roles.map(utils.formatBytes32String),
@@ -208,7 +228,7 @@ export class Shield {
     ]);
   }
 
-  async setUser(address, roles, credentials) {
+  async setUser(address: any, roles: string[], credentials: any) {
     const existingRoles = await this.contract.getRoles();
     const newRoles = getBytesFromRoles(
       roles.map(utils.formatBytes32String),
@@ -221,20 +241,20 @@ export class Shield {
 
   async getRules() {}
 
-  async getRule(label) {
+  async getRule(label: string) {
     const roles = await this.contract.getRoles();
     const policy = await this.contract.getRule(
       utils.formatBytes32String(label)
     );
-    return policy.map(function (bits) {
+    return policy.map(function (bits: Uint8Array) {
       return getRolesFromBytes(bits, roles).map(utils.parseBytes32String);
     });
   }
 
-  async createCredentialsForAddRule(label, policy) {
+  async createCredentialsForAddRule(label: string, policy: any[]) {
     const roles = await this.contract.getRoles();
     const newLabel = utils.formatBytes32String(label);
-    const newPolicy = policy.map(function (step) {
+    const newPolicy = policy.map(function (step: string[]) {
       return getBytesFromRoles(step.map(utils.formatBytes32String), roles);
     });
     return createCredentials(this.signer, this.contract, "addRule", [
@@ -243,10 +263,10 @@ export class Shield {
     ]);
   }
 
-  async addRule(label, policy, credentials) {
+  async addRule(label: string, policy: any[], credentials: any) {
     const roles = await this.contract.getRoles();
     const newLabel = utils.formatBytes32String(label);
-    const newPolicy = policy.map(function (step) {
+    const newPolicy = policy.map(function (step: string[]) {
       return getBytesFromRoles(step.map(utils.formatBytes32String), roles);
     });
     return this.contract
@@ -256,16 +276,23 @@ export class Shield {
 
   async getAssignments() {}
 
-  async getAssignment(to, f) {
+  async getAssignment(
+    to: { interface: { getSighash: (arg0: any) => any }; address: any },
+    f: any
+  ) {
     const roles = await this.contract.getRoles();
     let sig = to.interface.getSighash(f);
     const policy = await this.contract.getAssignment(to.address, sig);
-    return policy.map(function (bits) {
+    return policy.map(function (bits: Uint8Array) {
       return getRolesFromBytes(bits, roles).map(utils.parseBytes32String);
     });
   }
 
-  async createCredentialsForAssignRule(to, f, label) {
+  async createCredentialsForAssignRule(
+    to: { interface: { getSighash: (arg0: any) => any }; address: any },
+    f: any,
+    label: string
+  ) {
     const sig = to.interface.getSighash(f);
     const newLabel = utils.formatBytes32String(label);
     return createCredentials(this.signer, this.contract, "assignRule", [
@@ -275,7 +302,12 @@ export class Shield {
     ]);
   }
 
-  async assignRule(to, f, label, credentials) {
+  async assignRule(
+    to: { interface: { getSighash: (arg0: any) => any }; address: any },
+    f: any,
+    label: string,
+    credentials: any
+  ) {
     const sig = to.interface.getSighash(f);
     const newLabel = utils.formatBytes32String(label);
     return this.contract
@@ -291,7 +323,7 @@ export class Shield {
     return createCredentials(this.signer, this.contract, "pause", []);
   }
 
-  async pause(credentials) {
+  async pause(credentials: any) {
     return this.contract.pause(credentials);
   }
 
@@ -299,11 +331,11 @@ export class Shield {
     return createCredentials(this.signer, this.contract, "unpause", []);
   }
 
-  async unpause(credentials) {
+  async unpause(credentials: any) {
     return this.contract.unpause(credentials);
   }
 
-  async validateCredentials(credentials) {
+  async validateCredentials(credentials: any) {
     try {
       await this.contract.validateCredentials(credentials);
       return true;
