@@ -1,0 +1,37 @@
+{
+  "name": "@prifilabs/shield-ethereum-js",
+  "version": "1.0.0",
+  "description": "The Shield - customizable smart contract protection",
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "npx tsc",
+    "test": "npx hardhat test",
+    "coverage": "nyc ts-mocha test/index.spec.ts && npx hardhat coverage"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prifilabs/shield-ethereum-js.git"
+  },
+  "author": "Thierry Sans",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/prifilabs/shield-ethereum-js/issues"
+  },
+  "homepage": "https://github.com/prifilabs/shield-ethereum-js#readme",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
+    "@nomiclabs/hardhat-etherscan": "^3.1.7",
+    "@types/node": "^18.14.6",
+    "dotenv": "^16.0.3",
+    "hardhat": "^2.13.0",
+    "hardhat-abi-exporter": "^2.10.1",
+    "nyc": "^15.1.0",
+    "solidity-coverage": "^0.8.2",
+    "ts-mocha": "^10.0.0",
+    "typescript": "^4.9.5"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.8.2",
+    "ethers": "^5.7.2"
+  }
+}
