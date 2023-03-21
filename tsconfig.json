@@ -10,6 +10,7 @@
       "forceConsistentCasingInFileNames": true /* Disallow inconsistently */
   },
   "include": [
-    "src"
-  ]
+    "src", "test", "scripts"
+  ], 
+  "files": ["./hardhat.config.ts"]
 }
