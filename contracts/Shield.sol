@@ -44,6 +44,7 @@ abstract contract Shieldable {
 
 contract Shield is Shieldable, Initializable{
     
+    bool public paused;
     bytes32[] internal roles;    
     mapping(address => bytes8) internal users;
     mapping(bytes32 => bytes8[]) internal rules;
@@ -53,6 +54,8 @@ contract Shield is Shieldable, Initializable{
     event SetUser(address indexed addr, bytes8 roles);
     event AddRule(bytes32 indexed label, bytes8[] policy);
     event AssignRule(address indexed to, bytes4 sig, bytes32 indexed label);
+    event Paused();
+    event Unpaused();
     
     error ShieldError(string reason);
     
@@ -66,6 +69,7 @@ contract Shield is Shieldable, Initializable{
         bytes8[] memory policy
     ) public initializer {
         shield = this;
+        paused = false;
         if (_roles.length > 64) revert ShieldError('The Shield cannot have more than 64 roles');
         roles = _roles;
         emit AddRoles(_roles);
@@ -81,6 +85,8 @@ contract Shield is Shieldable, Initializable{
         _assignRule(address(this), 0x5ebbc32a, "admin-rule");
         _assignRule(address(this), 0x87a02a13, "admin-rule");
         _assignRule(address(this), 0x48ec6cdf, "admin-rule");
+        _assignRule(address(this), 0xe1b7351f, "admin-rule");
+        _assignRule(address(this), 0xda1f874d, "admin-rule");
     }
     
     // If you change the signature of this function, do not forget to update the function signature in the function 'initialize'
@@ -148,15 +154,26 @@ contract Shield is Shieldable, Initializable{
         return rules[label];
     }
     
+    function pause(Credentials memory credentials) public checkCredentials(credentials){
+        paused = true;
+        emit Paused();
+    }
+    
+    function unpause(Credentials memory credentials) public checkCredentials(credentials){
+        paused = false;
+        emit Unpaused();
+    }
+    
+    using ECDSA for bytes32;
+    
     function validateCredentials(Credentials calldata credentials) public view {
         bytes32 signerHash = keccak256(abi.encode(credentials.to, credentials.call, credentials.timestamp));
         address signer = signerHash.toEthSignedMessageHash().recover(credentials.approvals[0]);
         validateCredentials(credentials, signer, credentials.to, bytes4(credentials.call[:6]), credentials.call);
     }
     
-    using ECDSA for bytes32;
-    
     function validateCredentials(Credentials memory credentials, address sender, address to, bytes4 f, bytes memory call) public view {
+        require(!paused, "The Shield is paused");
         if (credentials.to != to){
             revert InvalidCredentials("Contract mismatch");
         }
