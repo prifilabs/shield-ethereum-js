@@ -1,10 +1,9 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-
-import "hardhat/console.sol";
 
 struct Credentials {
     address to;
@@ -32,53 +31,12 @@ abstract contract Shieldable {
         emit IsShieldable(address(this));
     }
 
-    using ECDSA for bytes32;
-
-    modifier checkCredentials(Credentials memory credentials){   
-        if (credentials.to != address(this)){
-            revert InvalidCredentials("Contract mismatch");
-        }
-        uint l = msg.data.length - abi.encode(credentials).length;
-        if (keccak256(msg.data[:l]) != keccak256(credentials.call)){
-            revert InvalidCredentials("Function mismatch");
-        }
-        if (credentials.approvals.length == 0){
-            revert InvalidCredentials("Approvals cannot be empty");
-        }
+    modifier checkCredentials(Credentials memory credentials){ 
         if (timestamps[credentials.timestamp]){
             revert InvalidCredentials("Credentials has been used already");
         }
-        bytes8[] memory policy = shield.getAssignment(address(this), msg.sig);
-        if (credentials.approvals.length != policy.length){
-            revert InvalidCredentials("Incorrect number of approvals");
-        }
-        address[] memory signers = new address[](credentials.approvals.length) ;
-        for (uint i=0; i<credentials.approvals.length; i++) {
-            bytes memory approval = credentials.approvals[i];
-            bytes32 signerHash;
-            if (i == 0){
-                signerHash = keccak256(abi.encode(credentials.to, credentials.call, credentials.timestamp));
-            } else {
-                signerHash = keccak256(abi.encode(credentials.approvals[i-1]));
-            }
-            address signer = signerHash.toEthSignedMessageHash().recover(approval);
-            bytes32 isValid =  shield.getUser(signer) & policy[i];
-            if (isValid == bytes32(0)){
-                revert InvalidCredentials("Policy violation");
-            }
-            if (i == 0){
-                if (signer != msg.sender){
-                    revert InvalidCredentials("The owner must be the first approver");
-                }
-            } else {
-                for(uint j=0; j<i; j++){
-                    if (signers[j] == signer){
-                        revert InvalidCredentials("Same address cannot sign twice");
-                    }
-                }
-            }
-            signers[i] = signer;
-        }
+        uint l = msg.data.length - abi.encode(credentials).length;
+        shield.validateCredentials(credentials, msg.sender, address(this), msg.sig, msg.data[:l]);
         _;
         timestamps[credentials.timestamp] = true;
     }
@@ -185,8 +143,59 @@ contract Shield is Shieldable, Initializable{
         _assignRule(to, sig, label);
     }
     
-    function getAssignment(address to, bytes4 sig) public view returns(bytes8[] memory){
+    function getAssignment(address to, bytes4 sig) public view returns(bytes8[] memory) {
         bytes32 label = assignments[to][sig];
         return rules[label];
+    }
+    
+    function validateCredentials(Credentials calldata credentials) public view {
+        bytes32 signerHash = keccak256(abi.encode(credentials.to, credentials.call, credentials.timestamp));
+        address signer = signerHash.toEthSignedMessageHash().recover(credentials.approvals[0]);
+        validateCredentials(credentials, signer, credentials.to, bytes4(credentials.call[:6]), credentials.call);
+    }
+    
+    using ECDSA for bytes32;
+    
+    function validateCredentials(Credentials memory credentials, address sender, address to, bytes4 f, bytes memory call) public view {
+        if (credentials.to != to){
+            revert InvalidCredentials("Contract mismatch");
+        }
+        if (keccak256(call) != keccak256(credentials.call)){
+            revert InvalidCredentials("Function mismatch");
+        }
+        if (credentials.approvals.length == 0){
+            revert InvalidCredentials("Approvals cannot be empty");
+        }
+        bytes8[] memory policy = getAssignment(to, f);
+        if (credentials.approvals.length != policy.length){
+            revert InvalidCredentials("Incorrect number of approvals");
+        }
+        address[] memory signers = new address[](credentials.approvals.length) ;
+        for (uint i=0; i<credentials.approvals.length; i++) {
+            bytes memory approval = credentials.approvals[i];
+            bytes32 signerHash;
+            if (i == 0){
+                signerHash = keccak256(abi.encode(credentials.to, credentials.call, credentials.timestamp));
+            } else {
+                signerHash = keccak256(abi.encode(credentials.approvals[i-1]));
+            }
+            address signer = signerHash.toEthSignedMessageHash().recover(approval);
+            bytes32 isValid =  getUser(signer) & policy[i];
+            if (isValid == bytes32(0)){
+                revert InvalidCredentials("Policy violation");
+            }
+            if (i == 0){
+                if (signer != sender){
+                    revert InvalidCredentials("The owner must be the first approver");
+                }
+            } else {
+                for(uint j=0; j<i; j++){
+                    if (signers[j] == signer){
+                        revert InvalidCredentials("Same address cannot sign twice");
+                    }
+                }
+            }
+            signers[i] = signer;
+        }
     }
 }

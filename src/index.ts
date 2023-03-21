@@ -226,4 +226,5 @@ export class Shield {
         const newLabel = utils.formatBytes32String(label);
         return this.contract.connect(this.signer).assignRule(to.address, sig, newLabel, credentials);
     }
+    
 }

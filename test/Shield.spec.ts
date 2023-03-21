@@ -19,10 +19,10 @@ describe("Shield", function () {
     describe("Deployment", function () {
       
       it("Should deploy", async function () {
-            const { factory, alice, bob, mallory } = await loadFixture(deployFactoryFixture);
-            const ShieldContractFactory = await ethers.getContractFactory("Shield");
-            const shield = await createShield(alice, "MyShield", ["admin"], [{addr: alice.address, roles: ["admin"]}], [["admin"]], factory, ShieldContractFactory);
-            context = {factory, shield, alice, bob, mallory};
+        const { factory, alice, bob, mallory } = await loadFixture(deployFactoryFixture);
+        const ShieldContractFactory = await ethers.getContractFactory("Shield");
+        const shield = await createShield(alice, "MyShield", ["admin"], [{addr: alice.address, roles: ["admin"]}], [["admin"]], factory, ShieldContractFactory);
+        context = {factory, shield, alice, bob, mallory};
       });
       
       it("Should set the roles", async function () {

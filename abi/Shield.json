@@ -417,5 +417,95 @@
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "call",
+            "type": "bytes"
+          },
+          {
+            "internalType": "uint256",
+            "name": "timestamp",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes[]",
+            "name": "approvals",
+            "type": "bytes[]"
+          }
+        ],
+        "internalType": "struct Credentials",
+        "name": "credentials",
+        "type": "tuple"
+      },
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes4",
+        "name": "f",
+        "type": "bytes4"
+      },
+      {
+        "internalType": "bytes",
+        "name": "call",
+        "type": "bytes"
+      }
+    ],
+    "name": "validateCredentials",
+    "outputs": [],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "call",
+            "type": "bytes"
+          },
+          {
+            "internalType": "uint256",
+            "name": "timestamp",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes[]",
+            "name": "approvals",
+            "type": "bytes[]"
+          }
+        ],
+        "internalType": "struct Credentials",
+        "name": "credentials",
+        "type": "tuple"
+      }
+    ],
+    "name": "validateCredentials",
+    "outputs": [],
+    "stateMutability": "view",
+    "type": "function"
   }
 ]
