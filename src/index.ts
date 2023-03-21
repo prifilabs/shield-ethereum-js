@@ -227,4 +227,32 @@ export class Shield {
         return this.contract.connect(this.signer).assignRule(to.address, sig, newLabel, credentials);
     }
     
+    async isPaused(){
+        return this.contract.paused();
+    }
+    
+    async createCredentialsForPause(){
+        return createCredentials(this.signer, this.contract, "pause", []);
+    }
+
+    async pause(credentials){
+        return this.contract.pause(credentials);
+    } 
+    
+    async createCredentialsForUnpause(){
+        return createCredentials(this.signer, this.contract, "unpause", []);
+    }
+
+    async unpause(credentials){
+        return this.contract.unpause(credentials);
+    }     
+    
+    async validateCredentials(credentials){
+        try{
+            await this.contract.validateCredentials(credentials);
+            return true;
+        } catch(error){
+            return false;
+        }
+    }    
 }

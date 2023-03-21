@@ -31,4 +31,10 @@ export declare class Shield {
     getAssignment(to: any, f: any): Promise<any>;
     createCredentialsForAssignRule(to: any, f: any, label: any): Promise<Credentials>;
     assignRule(to: any, f: any, label: any, credentials: any): Promise<any>;
+    isPaused(): Promise<any>;
+    createCredentialsForPause(): Promise<Credentials>;
+    pause(credentials: any): Promise<any>;
+    createCredentialsForUnpause(): Promise<Credentials>;
+    unpause(credentials: any): Promise<any>;
+    validateCredentials(credentials: any): Promise<boolean>;
 }
