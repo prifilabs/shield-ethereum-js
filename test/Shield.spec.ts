@@ -3,15 +3,15 @@ import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-import { Shield, createShield, createShieldInstance, createCredentials, approveCredentials, validateCredentials } from "../src/index";
+import { Shield, createShield, createShieldInstance, createCredentials, approveCredentials } from "../src/index";
 
 describe("Shield", function () {
   
     async function deployFactoryFixture(){
-        const [ owner, alice, bob, mallory ] = await ethers.getSigners();
+        const [ owner, alice, bob ] = await ethers.getSigners();
         const FactoryContractFactory = await ethers.getContractFactory("ShieldFactory");
         const factory = await FactoryContractFactory.deploy();
-        return { factory, alice, bob, mallory };
+        return { factory, alice, bob };
     }
   
     let context;
@@ -206,5 +206,7 @@ describe("Shield", function () {
             credentials = await shield.createCredentialsForAddPolicy(alice, label, policy);
             await expect(shield.addPolicy(alice, label, policy, credentials)).to.be.revertedWithCustomError(shield.contract, "ShieldError");
         });  
-    });
+    
+  });
+  
 });

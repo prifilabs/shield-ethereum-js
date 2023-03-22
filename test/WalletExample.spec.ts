@@ -19,7 +19,7 @@ describe("Wallet Example", function () {
     describe("Deployment", function () {
       
       it("Should deploy a shield", async function () {
-            const { factory, alice, bob, mallory } = await loadFixture(deployFactoryFixture);
+            const { factory, alice, bob } = await loadFixture(deployFactoryFixture);
             const ShieldContractFactory = await ethers.getContractFactory("Shield");
             const name = "MyShield";
             const roles = ["employee", "admin"];
