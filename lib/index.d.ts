@@ -1,4 +1,4 @@
-import { Signer, Contract } from "ethers";
+import { Signer, Contract } from 'ethers';
 export interface Credentials {
     to: string;
     call: string;

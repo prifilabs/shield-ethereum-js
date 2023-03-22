@@ -1,1 +1,1 @@
-export type User = { roles: string[]; addr: string };
+export type User = { roles: string[]; addr: string }
