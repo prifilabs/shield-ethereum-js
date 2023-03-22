@@ -30,19 +30,6 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
-        "internalType": "bytes32[]",
-        "name": "roles",
-        "type": "bytes32[]"
-      }
-    ],
-    "name": "AddRoles",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
         "indexed": true,
         "internalType": "bytes32",
         "name": "label",
@@ -55,7 +42,20 @@
         "type": "bytes8[]"
       }
     ],
-    "name": "AddRule",
+    "name": "AddPolicy",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "bytes32[]",
+        "name": "roles",
+        "type": "bytes32[]"
+      }
+    ],
+    "name": "AddRoles",
     "type": "event"
   },
   {
@@ -80,7 +80,7 @@
         "type": "bytes32"
       }
     ],
-    "name": "AssignRule",
+    "name": "AssignPolicy",
     "type": "event"
   },
   {
@@ -143,6 +143,51 @@
   {
     "inputs": [
       {
+        "internalType": "bytes32",
+        "name": "label",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes8[]",
+        "name": "policy",
+        "type": "bytes8[]"
+      },
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "call",
+            "type": "bytes"
+          },
+          {
+            "internalType": "uint256",
+            "name": "timestamp",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes[]",
+            "name": "approvals",
+            "type": "bytes[]"
+          }
+        ],
+        "internalType": "struct Credentials",
+        "name": "credentials",
+        "type": "tuple"
+      }
+    ],
+    "name": "addPolicy",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "bytes32[]",
         "name": "_roles",
         "type": "bytes32[]"
@@ -183,112 +228,86 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes4",
+        "name": "sig",
+        "type": "bytes4"
+      },
+      {
         "internalType": "bytes32",
         "name": "label",
         "type": "bytes32"
       },
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "call",
+            "type": "bytes"
+          },
+          {
+            "internalType": "uint256",
+            "name": "timestamp",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes[]",
+            "name": "approvals",
+            "type": "bytes[]"
+          }
+        ],
+        "internalType": "struct Credentials",
+        "name": "credentials",
+        "type": "tuple"
+      }
+    ],
+    "name": "assignPolicy",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes4",
+        "name": "sig",
+        "type": "bytes4"
+      }
+    ],
+    "name": "getAssignedPolicy",
+    "outputs": [
       {
         "internalType": "bytes8[]",
-        "name": "policy",
+        "name": "",
         "type": "bytes8[]"
-      },
-      {
-        "components": [
-          {
-            "internalType": "address",
-            "name": "to",
-            "type": "address"
-          },
-          {
-            "internalType": "bytes",
-            "name": "call",
-            "type": "bytes"
-          },
-          {
-            "internalType": "uint256",
-            "name": "timestamp",
-            "type": "uint256"
-          },
-          {
-            "internalType": "bytes[]",
-            "name": "approvals",
-            "type": "bytes[]"
-          }
-        ],
-        "internalType": "struct Credentials",
-        "name": "credentials",
-        "type": "tuple"
       }
     ],
-    "name": "addRule",
-    "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "internalType": "bytes4",
-        "name": "sig",
-        "type": "bytes4"
-      },
       {
         "internalType": "bytes32",
         "name": "label",
         "type": "bytes32"
-      },
-      {
-        "components": [
-          {
-            "internalType": "address",
-            "name": "to",
-            "type": "address"
-          },
-          {
-            "internalType": "bytes",
-            "name": "call",
-            "type": "bytes"
-          },
-          {
-            "internalType": "uint256",
-            "name": "timestamp",
-            "type": "uint256"
-          },
-          {
-            "internalType": "bytes[]",
-            "name": "approvals",
-            "type": "bytes[]"
-          }
-        ],
-        "internalType": "struct Credentials",
-        "name": "credentials",
-        "type": "tuple"
       }
     ],
-    "name": "assignRule",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "internalType": "bytes4",
-        "name": "sig",
-        "type": "bytes4"
-      }
-    ],
-    "name": "getAssignment",
+    "name": "getPolicy",
     "outputs": [
       {
         "internalType": "bytes8[]",
@@ -307,25 +326,6 @@
         "internalType": "bytes32[]",
         "name": "",
         "type": "bytes32[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "label",
-        "type": "bytes32"
-      }
-    ],
-    "name": "getRule",
-    "outputs": [
-      {
-        "internalType": "bytes8[]",
-        "name": "",
-        "type": "bytes8[]"
       }
     ],
     "stateMutability": "view",
@@ -561,41 +561,6 @@
         "internalType": "bytes",
         "name": "call",
         "type": "bytes"
-      }
-    ],
-    "name": "validateCredentials",
-    "outputs": [],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "components": [
-          {
-            "internalType": "address",
-            "name": "to",
-            "type": "address"
-          },
-          {
-            "internalType": "bytes",
-            "name": "call",
-            "type": "bytes"
-          },
-          {
-            "internalType": "uint256",
-            "name": "timestamp",
-            "type": "uint256"
-          },
-          {
-            "internalType": "bytes[]",
-            "name": "approvals",
-            "type": "bytes[]"
-          }
-        ],
-        "internalType": "struct Credentials",
-        "name": "credentials",
-        "type": "tuple"
       }
     ],
     "name": "validateCredentials",

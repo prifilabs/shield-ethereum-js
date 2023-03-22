@@ -105,7 +105,7 @@ export async function getAllShieldAddresses(signer: Signer){
 
 }
 
-export async function createShield(signer, name, roles, users, policy, factory?, shield?){
+export async function createShield(signer, name, roles, users, policy, factory?, iface?){
     const _name = utils.formatBytes32String(name);
     const _roles = roles.map(utils.formatBytes32String);
     const _users = users.map(function(user){
@@ -118,21 +118,19 @@ export async function createShield(signer, name, roles, users, policy, factory?,
     });
     const shieldTx = await factory.connect(signer).createShield(_name, _roles, _users, _policy);
     const [_, address] = await parseEvents("ShieldCreated", shieldTx);
-    return createShieldInstance(signer, address, shield);
+    return createShieldInstance(signer, address, iface);
 }
 
-export async function createShieldInstance(signer, address, shield?){
-    let contract = new Contract(address, shield.interface, signer);
-    return new Shield(contract, signer);
+export async function createShieldInstance(signer, address, iface?){
+    let contract = new Contract(address, iface, signer);
+    return new Shield(contract);
 }
 
 export class Shield {
     public contract: Contract; 
-    public signer: Signer;
  
-    constructor(contract:Contract, signer:Signer) {
+    constructor(contract:Contract) {
         this.contract = contract;
-        this.signer = signer;
     }
     
     async getRoles(){
@@ -140,14 +138,14 @@ export class Shield {
         return roles.map(utils.parseBytes32String);
     }
     
-    async createCredentialsForAddRoles(roles){
+    async createCredentialsForAddRoles(signer, roles){
         const newRoles = roles.map(utils.formatBytes32String);
-        return createCredentials(this.signer, this.contract, "addRoles", [newRoles]);
+        return createCredentials(signer, this.contract, "addRoles", [newRoles]);
     }
     
-    async addRoles(roles, credentials){
+    async addRoles(signer, roles, credentials){
         const newRoles = roles.map(utils.formatBytes32String);
-        return this.contract.connect(this.signer).addRoles(newRoles, credentials);
+        return this.contract.connect(signer).addRoles(newRoles, credentials);
     }
     
     async getUsers(){
@@ -160,96 +158,97 @@ export class Shield {
         return getRolesFromBytes(bits, roles).map(utils.parseBytes32String);
     }
 
-    async createCredentialsForSetUser(address, roles){
+    async createCredentialsForSetUser(signer, address, roles){
         const existingRoles = await this.contract.getRoles();
         const newRoles = getBytesFromRoles(roles.map(utils.formatBytes32String), existingRoles);
-        return createCredentials(this.signer, this.contract, "setUser", [address, newRoles]);
+        return createCredentials(signer, this.contract, "setUser", [address, newRoles]);
     }
 
-    async setUser(address, roles, credentials){
+    async setUser(signer, address, roles, credentials){
         const existingRoles = await this.contract.getRoles();
         const newRoles = getBytesFromRoles(roles.map(utils.formatBytes32String), existingRoles);
-        return this.contract.connect(this.signer).setUser(address, newRoles, credentials);
+        return this.contract.connect(signer).setUser(address, newRoles, credentials);
     }
 
-    async getRules(){
+    async getPolicys(){
     
     }
 
-    async getRule(label){
+    async getPolicy(label){
         const roles = await this.contract.getRoles();
-        const policy = await this.contract.getRule(utils.formatBytes32String(label));
+        const policy = await this.contract.getPolicy(utils.formatBytes32String(label));
         return policy.map(function(bits){
             return getRolesFromBytes(bits, roles).map(utils.parseBytes32String);
         });
     }
 
-    async createCredentialsForAddRule(label, policy){
+    async createCredentialsForAddPolicy(signer, label, policy){
         const roles = await this.contract.getRoles();
         const newLabel = utils.formatBytes32String(label);
         const newPolicy = policy.map(function(step){
             return getBytesFromRoles(step.map(utils.formatBytes32String), roles);
         });
-        return createCredentials(this.signer, this.contract, "addRule", [newLabel, newPolicy]);
+        return createCredentials(signer, this.contract, "addPolicy", [newLabel, newPolicy]);
     }
 
-    async addRule(label, policy, credentials){
+    async addPolicy(signer, label, policy, credentials){
         const roles = await this.contract.getRoles();
         const newLabel = utils.formatBytes32String(label);
         const newPolicy = policy.map(function(step){
             return getBytesFromRoles(step.map(utils.formatBytes32String), roles);
         });
-        return this.contract.connect(this.signer).addRule(newLabel, newPolicy, credentials);
+        return this.contract.connect(signer).addPolicy(newLabel, newPolicy, credentials);
     }
 
-    async getAssignments(){
+    async getAssignedPolicies(){
     
     }
 
-    async getAssignment(to, f){
+    async getAssignedPolicy(to, f){
         const roles = await this.contract.getRoles();
         let sig = to.interface.getSighash(f);
-        const policy = await this.contract.getAssignment(to.address, sig)
+        const policy = await this.contract.getAssignedPolicy(to.address, sig)
         return policy.map(function(bits){
             return getRolesFromBytes(bits, roles).map(utils.parseBytes32String);
         });
     }
 
-    async createCredentialsForAssignRule(to, f, label){
+    async createCredentialsForAssignPolicy(signer, to, f, label){
         const sig = to.interface.getSighash(f);
         const newLabel = utils.formatBytes32String(label);
-        return createCredentials(this.signer, this.contract, "assignRule", [to.address, sig, newLabel]);
+        return createCredentials(signer, this.contract, "assignPolicy", [to.address, sig, newLabel]);
     }
 
-    async assignRule(to, f, label, credentials){
+    async assignPolicy(signer, to, f, label, credentials){
         const sig = to.interface.getSighash(f);
         const newLabel = utils.formatBytes32String(label);
-        return this.contract.connect(this.signer).assignRule(to.address, sig, newLabel, credentials);
+        return this.contract.connect(signer).assignPolicy(to.address, sig, newLabel, credentials);
     }
     
     async isPaused(){
         return this.contract.paused();
     }
     
-    async createCredentialsForPause(){
-        return createCredentials(this.signer, this.contract, "pause", []);
+    async createCredentialsForPause(signer){
+        return createCredentials(signer, this.contract, "pause", []);
     }
 
-    async pause(credentials){
-        return this.contract.pause(credentials);
+    async pause(signer, credentials){
+        return this.contract.connect(signer).pause(credentials);
     } 
     
-    async createCredentialsForUnpause(){
-        return createCredentials(this.signer, this.contract, "unpause", []);
+    async createCredentialsForUnpause(signer){
+        return createCredentials(signer, this.contract, "unpause", []);
     }
 
-    async unpause(credentials){
-        return this.contract.unpause(credentials);
+    async unpause(signer, credentials){
+        return this.contract.connect(signer).unpause(credentials);
     }     
     
     async validateCredentials(credentials){
         try{
-            await this.contract.validateCredentials(credentials);
+            const signer = await getSigner(['address', 'bytes', 'uint'],[credentials.to, credentials.call, credentials.timestamp],credentials.approvals[0]);
+            await this.contract.validateCredentials(credentials, credentials.signer, credentials.to, credentials.call.slice(0,10), credentials.call);
             return true;
         } catch(error){
             return false;

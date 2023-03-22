@@ -32,6 +32,11 @@ abstract contract Shieldable {
     }
 
     modifier checkCredentials(Credentials memory credentials){ 
+        if (shield.paused()){
+            if (!(address(this) == address(shield) && msg.sig == 0xda1f874d)){
+                revert InvalidCredentials("The Shield is paused");
+            }
+        }
         if (timestamps[credentials.timestamp]){
             revert InvalidCredentials("Credentials has been used already");
         }
@@ -47,13 +52,13 @@ contract Shield is Shieldable, Initializable{
     bool public paused;
     bytes32[] internal roles;    
     mapping(address => bytes8) internal users;
-    mapping(bytes32 => bytes8[]) internal rules;
+    mapping(bytes32 => bytes8[]) internal policies;
     mapping (address => mapping (bytes4 => bytes32)) internal assignments;
     
     event AddRoles(bytes32[] roles);
     event SetUser(address indexed addr, bytes8 roles);
-    event AddRule(bytes32 indexed label, bytes8[] policy);
-    event AssignRule(address indexed to, bytes4 sig, bytes32 indexed label);
+    event AddPolicy(bytes32 indexed label, bytes8[] policy);
+    event AssignPolicy(address indexed to, bytes4 sig, bytes32 indexed label);
     event Paused();
     event Unpaused();
     
@@ -80,13 +85,13 @@ contract Shield is Shieldable, Initializable{
         }
         
         // auto-administration
-        _addRule("admin-rule", policy);
-        _assignRule(address(this), 0x4aece76e, "admin-rule");
-        _assignRule(address(this), 0x5ebbc32a, "admin-rule");
-        _assignRule(address(this), 0x87a02a13, "admin-rule");
-        _assignRule(address(this), 0x48ec6cdf, "admin-rule");
-        _assignRule(address(this), 0xe1b7351f, "admin-rule");
-        _assignRule(address(this), 0xda1f874d, "admin-rule");
+        _addPolicy("admin-rule", policy);
+        _assignPolicy(address(this), 0x4aece76e, "admin-rule");
+        _assignPolicy(address(this), 0x5ebbc32a, "admin-rule");
+        _assignPolicy(address(this), 0x1df0be84, "admin-rule");
+        _assignPolicy(address(this), 0x02eba6ce, "admin-rule");
+        _assignPolicy(address(this), 0xe1b7351f, "admin-rule");
+        _assignPolicy(address(this), 0xda1f874d, "admin-rule");
     }
     
     // If you change the signature of this function, do not forget to update the function signature in the function 'initialize'
@@ -120,38 +125,38 @@ contract Shield is Shieldable, Initializable{
         return users[user];
     }
     
-    function _addRule(bytes32 label, bytes8[] memory policy) private {
+    function _addPolicy(bytes32 label, bytes8[] memory policy) private {
         if (label == bytes32(0)) revert ShieldError('Undefined label');
-        if (rules[label].length > 0) revert ShieldError('Label already exists');
+        if (policies[label].length > 0) revert ShieldError('Label already exists');
         if (policy.length == 0) revert ShieldError('Policy cannot be empty');
         bytes8 mask = _getMask();
         for (uint i = 0; i < policy.length; i++) policy[i] = policy[i] & mask;
-        rules[label] = policy;        
-        emit AddRule(label, policy);
+        policies[label] = policy;        
+        emit AddPolicy(label, policy);
     }
     
     // If you change the signature of this function, do not forget to update the function signature in the function 'initialize'
-    function addRule(bytes32 label, bytes8[] memory policy, Credentials memory credentials) public checkCredentials(credentials){
-        _addRule(label, policy);
+    function addPolicy(bytes32 label, bytes8[] memory policy, Credentials memory credentials) public checkCredentials(credentials){
+        _addPolicy(label, policy);
     }
     
-    function getRule(bytes32 label) public view returns (bytes8[] memory) {
-        return rules[label];
+    function getPolicy(bytes32 label) public view returns (bytes8[] memory) {
+        return policies[label];
     }
     
-    function _assignRule(address to, bytes4 sig, bytes32 label) private {
+    function _assignPolicy(address to, bytes4 sig, bytes32 label) private {
         assignments[to][sig] = label;
-        emit AssignRule(to, sig, label);
+        emit AssignPolicy(to, sig, label);
     }
     
     // If you change the signature of this function, do not forget to update the function signature in the function 'initialize'
-    function assignRule(address to, bytes4 sig, bytes32 label, Credentials memory credentials) public checkCredentials(credentials){
-        _assignRule(to, sig, label);
+    function assignPolicy(address to, bytes4 sig, bytes32 label, Credentials memory credentials) public checkCredentials(credentials){
+        _assignPolicy(to, sig, label);
     }
     
-    function getAssignment(address to, bytes4 sig) public view returns(bytes8[] memory) {
+    function getAssignedPolicy(address to, bytes4 sig) public view returns(bytes8[] memory) {
         bytes32 label = assignments[to][sig];
-        return rules[label];
+        return policies[label];
     }
     
     function pause(Credentials memory credentials) public checkCredentials(credentials){
@@ -166,14 +171,7 @@ contract Shield is Shieldable, Initializable{
     
     using ECDSA for bytes32;
     
-    function validateCredentials(Credentials calldata credentials) public view {
-        bytes32 signerHash = keccak256(abi.encode(credentials.to, credentials.call, credentials.timestamp));
-        address signer = signerHash.toEthSignedMessageHash().recover(credentials.approvals[0]);
-        validateCredentials(credentials, signer, credentials.to, bytes4(credentials.call[:6]), credentials.call);
-    }
-    
     function validateCredentials(Credentials memory credentials, address sender, address to, bytes4 f, bytes memory call) public view {
-        require(!paused, "The Shield is paused");
         if (credentials.to != to){
             revert InvalidCredentials("Contract mismatch");
         }
@@ -183,7 +181,7 @@ contract Shield is Shieldable, Initializable{
         if (credentials.approvals.length == 0){
             revert InvalidCredentials("Approvals cannot be empty");
         }
-        bytes8[] memory policy = getAssignment(to, f);
+        bytes8[] memory policy = getAssignedPolicy(to, f);
         if (credentials.approvals.length != policy.length){
             revert InvalidCredentials("Incorrect number of approvals");
         }

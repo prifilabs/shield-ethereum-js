@@ -28,7 +28,7 @@ describe("Wallet Example", function () {
                 {addr: bob.address, roles: ["employee"]},
             ];
             const policy = [["admin"]];
-            const shield = await createShield(alice, name, roles, users, policy, factory, ShieldContractFactory);
+            const shield = await createShield(alice, name, roles, users, policy, factory, ShieldContractFactory.interface);
             context = { shield, alice, bob };
       });
       
@@ -40,15 +40,21 @@ describe("Wallet Example", function () {
           context = {...context, wallet};
       });
       
+      it("Should not allow Alice to withdraw ", async function () {
+          const { shield, wallet, alice } = context;
+          const credentials = await createCredentials(alice, wallet, "protectedWithdraw", [1000]);
+          await expect(wallet.connect(alice).protectedWithdraw(1000, credentials)).to.be.revertedWithCustomError(shield.contract, "InvalidCredentials");
+      });
+      
       it("Should configure the shield to protect the wallet", async function () {
           const { shield, wallet, alice } = context;
           const label = "1-step-rule";
           const policy = [["admin"]];
-          const credentials1 = await shield.createCredentialsForAddRule(label, policy);
-          await shield.addRule(label, policy, credentials1);
+          const credentials1 = await shield.createCredentialsForAddPolicy(alice, label, policy);
+          await shield.addPolicy(alice, label, policy, credentials1);
           const f = "protectedWithdraw";
-          const credentials2 = await shield.createCredentialsForAssignRule(wallet, f, label);
-          await shield.assignRule(wallet, f, label, credentials2);
+          const credentials2 = await shield.createCredentialsForAssignPolicy(alice, wallet, f, label);
+          await shield.assignPolicy(alice, wallet, f, label, credentials2);
           context = {...context, wallet};
       });
       
@@ -75,11 +81,11 @@ describe("Wallet Example", function () {
             const { shield, wallet, alice, bob } = context;
             const label = "2-steps-rule";
             const policy = [["employee"], ["admin"]];
-            const credentials1 = await shield.createCredentialsForAddRule(label, policy);
-            await shield.addRule(label, policy, credentials1);
+            const credentials1 = await shield.createCredentialsForAddPolicy(alice, label, policy);
+            await shield.addPolicy(alice, label, policy, credentials1);
             const f = "protectedWithdraw";
-            const credentials2 = await shield.createCredentialsForAssignRule(wallet, f, label);
-            await shield.assignRule(wallet, f, label, credentials2);
+            const credentials2 = await shield.createCredentialsForAssignPolicy(alice, wallet, f, label);
+            await shield.assignPolicy(alice, wallet, f, label, credentials2);
             const credentials3 = await createCredentials(bob, wallet, "protectedWithdraw", [1000]);
             const credentials4 = await approveCredentials(alice, credentials3);
             await wallet.connect(bob).protectedWithdraw(1000, credentials4);
