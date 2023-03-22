@@ -2,10 +2,10 @@
 
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts/proxy/Clones.sol";
-import "./Shield.sol";
+import '@openzeppelin/contracts/proxy/Clones.sol';
+import './Shield.sol';
 
-import "hardhat/console.sol";
+import 'hardhat/console.sol';
 
 contract ShieldFactory {
     address immutable shieldImpl;

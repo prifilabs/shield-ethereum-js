@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.9;
 
-import "./Shield.sol";
+import './Shield.sol';
 
 contract WalletExample is Shieldable {
     address private owner;
