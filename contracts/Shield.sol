@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
+import '@openzeppelin/contracts/proxy/utils/Initializable.sol';
+import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 
 struct Credentials {
     address to;
@@ -23,7 +23,7 @@ abstract contract Shieldable {
     mapping(bytes32 => bool) internal burns;
 
     event IsShieldable(address c);
-    
+
     error InvalidCredentials(string reason);
 
     constructor(Shield _shield) {
@@ -88,14 +88,14 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
         }
 
         // auto-administration
-        _addPolicy("admin-rule", policy);
-        _assignPolicy(address(this), 0x4aece76e, "admin-rule");
-        _assignPolicy(address(this), 0x5ebbc32a, "admin-rule");
-        _assignPolicy(address(this), 0x1df0be84, "admin-rule");
-        _assignPolicy(address(this), 0x02eba6ce, "admin-rule");
-        _assignPolicy(address(this), 0xe1b7351f, "admin-rule");
-        _assignPolicy(address(this), 0xda1f874d, "admin-rule");
-        _assignPolicy(address(this), 0x50542f2a, "admin-rule");
+        _addPolicy('admin-rule', policy);
+        _assignPolicy(address(this), 0x4aece76e, 'admin-rule');
+        _assignPolicy(address(this), 0x5ebbc32a, 'admin-rule');
+        _assignPolicy(address(this), 0x1df0be84, 'admin-rule');
+        _assignPolicy(address(this), 0x02eba6ce, 'admin-rule');
+        _assignPolicy(address(this), 0xe1b7351f, 'admin-rule');
+        _assignPolicy(address(this), 0xda1f874d, 'admin-rule');
+        _assignPolicy(address(this), 0x50542f2a, 'admin-rule');
     }
 
     // If you change the signature of this function, do not forget to update the function signature in the function 'initialize'
@@ -198,9 +198,13 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
         paused = false;
         emit Unpaused();
     }
-    
-    function transfer(address payable _to, uint256 amount, Credentials memory credentials) public payable nonReentrant checkCredentials(credentials){
-        (bool sent, ) = _to.call{value: amount}("");
+
+    function transfer(
+        address payable _to,
+        uint256 amount,
+        Credentials memory credentials
+    ) public payable nonReentrant checkCredentials(credentials) {
+        (bool sent, ) = _to.call{value: amount}('');
         require(sent);
     }
 
@@ -213,8 +217,8 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
         bytes memory call,
         bytes8[] memory policy
     ) private view returns (address[] memory) {
-        if (burns[keccak256(credentials.approvals[0])]){
-            revert InvalidCredentials("Credentials has been used already");
+        if (burns[keccak256(credentials.approvals[0])]) {
+            revert InvalidCredentials('Credentials has been used already');
         }
         if (credentials.to != to) {
             revert InvalidCredentials('Contract mismatch');
@@ -295,20 +299,27 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
         return
             _partialValidateCredentials(credentials, sender, to, call, policy);
     }
-    
+
     function burnCredentials(Credentials calldata credentials) public {
         bytes32 signerHash = keccak256(
-                    abi.encode(
-                        credentials.to,
-                        credentials.call,
-                        credentials.timestamp
-                    )
+            abi.encode(credentials.to, credentials.call, credentials.timestamp)
         );
-        address signer = signerHash.toEthSignedMessageHash().recover(credentials.approvals[0]);
-        bytes8[] memory policy = getAssignedPolicy(credentials.to, bytes4(credentials.call[:4]));
-        address[] memory signers = _partialValidateCredentials(credentials, signer, credentials.to, credentials.call, policy);
-        for(uint i = 0; i < signers.length; i++){
-            if (signers[i] == msg.sender){
+        address signer = signerHash.toEthSignedMessageHash().recover(
+            credentials.approvals[0]
+        );
+        bytes8[] memory policy = getAssignedPolicy(
+            credentials.to,
+            bytes4(credentials.call[:4])
+        );
+        address[] memory signers = _partialValidateCredentials(
+            credentials,
+            signer,
+            credentials.to,
+            credentials.call,
+            policy
+        );
+        for (uint i = 0; i < signers.length; i++) {
+            if (signers[i] == msg.sender) {
                 burns[keccak256(credentials.approvals[0])] = true;
                 break;
             }
