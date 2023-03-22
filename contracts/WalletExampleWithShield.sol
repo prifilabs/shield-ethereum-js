@@ -9,7 +9,7 @@ contract WalletExampleWithShield is Shieldable {
 
     function withdraw(
         uint256 amount,
-        Credentials memory credentials
+        Credentials calldata credentials
     ) public checkCredentials(credentials) {
         (bool sent, ) = payable(msg.sender).call{value: amount}('');
         require(sent);

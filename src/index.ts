@@ -286,6 +286,18 @@ export class Shield {
     async unpause(signer: string | Signer | Provider, credentials: any) {
         return this.contract.connect(signer).unpause(credentials)
     }
+    
+    async createCredentialsForTransfer(signer: Signer, to: string, amount: number) {
+        return createCredentials(signer, this.contract, 'transfer', [to, amount])
+    }
+
+    async transfer(signer: string | Signer | Provider, to: string, amount: number, credentials: any) {
+        return this.contract.connect(signer).transfer(to, amount, credentials)
+    }
+
+    async burnCredentials(signer: string | Signer | Provider, credentials: any) {
+        return this.contract.connect(signer).burnCredentials(credentials)
+    }
 
     async validateCredentials(credentials: {
         to: any
@@ -293,23 +305,19 @@ export class Shield {
         timestamp: any
         approvals: string[]
         signer: any
-    }) {
-        try {
-            const signer = await getSigner(
-                ['address', 'bytes', 'uint'],
-                [credentials.to, credentials.call, credentials.timestamp],
-                credentials.approvals[0]
-            )
-            await this.contract.validateCredentials(
-                credentials,
-                credentials.signer,
-                credentials.to,
-                credentials.call.slice(0, 10),
-                credentials.call
-            )
-            return true
-        } catch (error) {
-            return false
-        }
+    }, full: boolean):Promise<string[]> {
+        const signer = await getSigner(
+            ['address', 'bytes', 'uint'],
+            [credentials.to, credentials.call, credentials.timestamp],
+            credentials.approvals[0]
+        );
+        return this.contract.validateCredentials(
+            credentials,
+            credentials.signer,
+            credentials.to,
+            credentials.call.slice(0, 10),
+            credentials.call,
+            full
+        );
     }
 }

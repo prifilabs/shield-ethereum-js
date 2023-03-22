@@ -2,7 +2,6 @@ import { HardhatUserConfig } from 'hardhat/config'
 import '@nomicfoundation/hardhat-toolbox'
 import '@nomiclabs/hardhat-etherscan'
 import 'solidity-coverage'
-import 'hardhat-abi-exporter'
 
 import * as dotenv from 'dotenv'
 dotenv.config()

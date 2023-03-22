@@ -96,6 +96,7 @@ describe('Shield', function () {
             const { shield, alice } = context
             expect(await shield.isPaused()).to.be.false
         })
+        
     })
 
     describe('Admin', function () {
@@ -156,8 +157,8 @@ describe('Shield', function () {
                 label,
                 credentials
             )
-            // const policy = await shield.getPolicy(label)
-            // expect(await shield.getAssignedPolicy(shield.contract, f)).to.deep.equal(policy);
+            const policy = await shield.getPolicy(label)
+            expect(await shield.getAssignedPolicy(shield.contract, f)).to.deep.equal(policy);
         })
 
         it('Should add a rule and set an assignment', async function () {
@@ -219,6 +220,26 @@ describe('Shield', function () {
             const credentials2 = await approveCredentials(alice, credentials1)
             await shield.unpause(bob, credentials2)
             expect(await shield.isPaused()).to.be.false
+        })
+        
+        it('Should transfer eth', async function () {
+            const { shield, alice } = context
+            const amount = ethers.utils.parseEther("1.0");
+            await alice.sendTransaction({to: shield.contract.address, value: amount})
+            const credentials = await shield.createCredentialsForTransfer(alice, alice.address, amount);
+            expect(await shield.transfer(alice, alice.address, amount, credentials)).to.changeEtherBalance(alice, amount).and.to.changeEtherBalance(shield, -amount);
+        })
+        
+        it('Should burn a credential', async function () {
+            const { shield, alice } = context
+            const credentials = await shield.createCredentialsForPause(alice)
+            await shield.burnCredentials(alice, credentials)
+            await expect(
+                shield.pause(alice, credentials)
+            ).to.be.revertedWithCustomError(
+                shield.contract,
+                'InvalidCredentials'
+            )
         })
     })
 

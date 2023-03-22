@@ -63,13 +63,12 @@ export interface ShieldInterface extends utils.Interface {
     "getRoles()": FunctionFragment;
     "getUser(address)": FunctionFragment;
     "initialize(bytes32[],(address,bytes8)[],bytes8[])": FunctionFragment;
-    "partialValidateCredentials((address,bytes,uint256,bytes[]),address,address,bytes4,bytes)": FunctionFragment;
     "pause((address,bytes,uint256,bytes[]))": FunctionFragment;
     "paused()": FunctionFragment;
     "setUser(address,bytes8,(address,bytes,uint256,bytes[]))": FunctionFragment;
     "transfer(address,uint256,(address,bytes,uint256,bytes[]))": FunctionFragment;
     "unpause((address,bytes,uint256,bytes[]))": FunctionFragment;
-    "validateCredentials((address,bytes,uint256,bytes[]),address,address,bytes4,bytes)": FunctionFragment;
+    "validateCredentials((address,bytes,uint256,bytes[]),address,address,bytes4,bytes,bool)": FunctionFragment;
   };
 
   getFunction(
@@ -83,7 +82,6 @@ export interface ShieldInterface extends utils.Interface {
       | "getRoles"
       | "getUser"
       | "initialize"
-      | "partialValidateCredentials"
       | "pause"
       | "paused"
       | "setUser"
@@ -139,16 +137,6 @@ export interface ShieldInterface extends utils.Interface {
     ]
   ): string;
   encodeFunctionData(
-    functionFragment: "partialValidateCredentials",
-    values: [
-      CredentialsStruct,
-      PromiseOrValue<string>,
-      PromiseOrValue<string>,
-      PromiseOrValue<BytesLike>,
-      PromiseOrValue<BytesLike>
-    ]
-  ): string;
-  encodeFunctionData(
     functionFragment: "pause",
     values: [CredentialsStruct]
   ): string;
@@ -180,7 +168,8 @@ export interface ShieldInterface extends utils.Interface {
       PromiseOrValue<string>,
       PromiseOrValue<string>,
       PromiseOrValue<BytesLike>,
-      PromiseOrValue<BytesLike>
+      PromiseOrValue<BytesLike>,
+      PromiseOrValue<boolean>
     ]
   ): string;
 
@@ -202,10 +191,6 @@ export interface ShieldInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "getRoles", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "getUser", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "partialValidateCredentials",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "pause", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "paused", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "setUser", data: BytesLike): Result;
@@ -377,15 +362,6 @@ export interface Shield extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
-    partialValidateCredentials(
-      credentials: CredentialsStruct,
-      sender: PromiseOrValue<string>,
-      to: PromiseOrValue<string>,
-      f: PromiseOrValue<BytesLike>,
-      call: PromiseOrValue<BytesLike>,
-      overrides?: CallOverrides
-    ): Promise<[string[]]>;
-
     pause(
       credentials: CredentialsStruct,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
@@ -418,6 +394,7 @@ export interface Shield extends BaseContract {
       to: PromiseOrValue<string>,
       f: PromiseOrValue<BytesLike>,
       call: PromiseOrValue<BytesLike>,
+      full: PromiseOrValue<boolean>,
       overrides?: CallOverrides
     ): Promise<[string[]]>;
   };
@@ -473,15 +450,6 @@ export interface Shield extends BaseContract {
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
-  partialValidateCredentials(
-    credentials: CredentialsStruct,
-    sender: PromiseOrValue<string>,
-    to: PromiseOrValue<string>,
-    f: PromiseOrValue<BytesLike>,
-    call: PromiseOrValue<BytesLike>,
-    overrides?: CallOverrides
-  ): Promise<string[]>;
-
   pause(
     credentials: CredentialsStruct,
     overrides?: Overrides & { from?: PromiseOrValue<string> }
@@ -514,6 +482,7 @@ export interface Shield extends BaseContract {
     to: PromiseOrValue<string>,
     f: PromiseOrValue<BytesLike>,
     call: PromiseOrValue<BytesLike>,
+    full: PromiseOrValue<boolean>,
     overrides?: CallOverrides
   ): Promise<string[]>;
 
@@ -569,15 +538,6 @@ export interface Shield extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    partialValidateCredentials(
-      credentials: CredentialsStruct,
-      sender: PromiseOrValue<string>,
-      to: PromiseOrValue<string>,
-      f: PromiseOrValue<BytesLike>,
-      call: PromiseOrValue<BytesLike>,
-      overrides?: CallOverrides
-    ): Promise<string[]>;
-
     pause(
       credentials: CredentialsStruct,
       overrides?: CallOverrides
@@ -610,6 +570,7 @@ export interface Shield extends BaseContract {
       to: PromiseOrValue<string>,
       f: PromiseOrValue<BytesLike>,
       call: PromiseOrValue<BytesLike>,
+      full: PromiseOrValue<boolean>,
       overrides?: CallOverrides
     ): Promise<string[]>;
   };
@@ -712,15 +673,6 @@ export interface Shield extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
-    partialValidateCredentials(
-      credentials: CredentialsStruct,
-      sender: PromiseOrValue<string>,
-      to: PromiseOrValue<string>,
-      f: PromiseOrValue<BytesLike>,
-      call: PromiseOrValue<BytesLike>,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     pause(
       credentials: CredentialsStruct,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
@@ -753,6 +705,7 @@ export interface Shield extends BaseContract {
       to: PromiseOrValue<string>,
       f: PromiseOrValue<BytesLike>,
       call: PromiseOrValue<BytesLike>,
+      full: PromiseOrValue<boolean>,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
   };
@@ -809,15 +762,6 @@ export interface Shield extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 
-    partialValidateCredentials(
-      credentials: CredentialsStruct,
-      sender: PromiseOrValue<string>,
-      to: PromiseOrValue<string>,
-      f: PromiseOrValue<BytesLike>,
-      call: PromiseOrValue<BytesLike>,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     pause(
       credentials: CredentialsStruct,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
@@ -850,6 +794,7 @@ export interface Shield extends BaseContract {
       to: PromiseOrValue<string>,
       f: PromiseOrValue<BytesLike>,
       call: PromiseOrValue<BytesLike>,
+      full: PromiseOrValue<boolean>,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
   };

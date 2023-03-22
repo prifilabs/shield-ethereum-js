@@ -31,7 +31,7 @@ abstract contract Shieldable {
         emit IsShieldable(address(this));
     }
 
-    modifier checkCredentials(Credentials memory credentials) {
+    modifier checkCredentials(Credentials calldata credentials) {
         if (shield.paused()) {
             if (!(address(this) == address(shield) && msg.sig == 0xda1f874d)) {
                 revert InvalidCredentials('The Shield is paused');
@@ -43,7 +43,8 @@ abstract contract Shieldable {
             msg.sender,
             address(this),
             msg.sig,
-            msg.data[:l]
+            msg.data[:l],
+            true
         );
         _;
         burns[keccak256(credentials.approvals[0])] = true;
@@ -66,14 +67,14 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
 
     error ShieldError(string reason);
 
-    constructor() payable Shieldable(this) {
+    constructor() Shieldable(this) {
         _disableInitializers();
     }
 
     function initialize(
-        bytes32[] memory _roles,
-        User[] memory _users,
-        bytes8[] memory policy
+        bytes32[] calldata _roles,
+        User[] calldata _users,
+        bytes8[] calldata policy
     ) public initializer {
         shield = this;
         paused = false;
@@ -100,8 +101,8 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
 
     // If you change the signature of this function, do not forget to update the function signature in the function 'initialize'
     function addRoles(
-        bytes32[] memory _roles,
-        Credentials memory credentials
+        bytes32[] calldata _roles,
+        Credentials calldata credentials
     ) public checkCredentials(credentials) {
         if (roles.length + _roles.length > 64)
             revert ShieldError('The Shield cannot have more than 64 roles');
@@ -128,7 +129,7 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
     function setUser(
         address addr,
         bytes8 _roles,
-        Credentials memory credentials
+        Credentials calldata credentials
     ) public checkCredentials(credentials) {
         _setUser(addr, _roles);
     }
@@ -152,8 +153,8 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
     // If you change the signature of this function, do not forget to update the function signature in the function 'initialize'
     function addPolicy(
         bytes32 label,
-        bytes8[] memory policy,
-        Credentials memory credentials
+        bytes8[] calldata policy,
+        Credentials calldata credentials
     ) public checkCredentials(credentials) {
         _addPolicy(label, policy);
     }
@@ -172,7 +173,7 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
         address to,
         bytes4 sig,
         bytes32 label,
-        Credentials memory credentials
+        Credentials calldata credentials
     ) public checkCredentials(credentials) {
         _assignPolicy(to, sig, label);
     }
@@ -186,23 +187,26 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
     }
 
     function pause(
-        Credentials memory credentials
+        Credentials calldata credentials
     ) public checkCredentials(credentials) {
         paused = true;
         emit Paused();
     }
 
     function unpause(
-        Credentials memory credentials
+        Credentials calldata credentials
     ) public checkCredentials(credentials) {
         paused = false;
         emit Unpaused();
     }
 
+    receive() external payable {}
+    fallback() external payable {}
+
     function transfer(
         address payable _to,
         uint256 amount,
-        Credentials memory credentials
+        Credentials calldata credentials
     ) public payable nonReentrant checkCredentials(credentials) {
         (bool sent, ) = _to.call{value: amount}('');
         require(sent);
@@ -210,16 +214,14 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
 
     using ECDSA for bytes32;
 
-    function _partialValidateCredentials(
-        Credentials memory credentials,
+    function validateCredentials(
+        Credentials calldata credentials,
         address sender,
         address to,
-        bytes memory call,
-        bytes8[] memory policy
-    ) private view returns (address[] memory) {
-        if (burns[keccak256(credentials.approvals[0])]) {
-            revert InvalidCredentials('Credentials has been used already');
-        }
+        bytes4 f,
+        bytes calldata call,
+        bool full
+    ) public view returns (address[] memory) {
         if (credentials.to != to) {
             revert InvalidCredentials('Contract mismatch');
         }
@@ -228,6 +230,19 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
         }
         if (credentials.approvals.length == 0) {
             revert InvalidCredentials('Approvals cannot be empty');
+        }
+        bytes8[] memory policy = getAssignedPolicy(to, f);
+        if (full){
+            if (credentials.approvals.length != policy.length) {
+                revert InvalidCredentials('Incorrect number of approvals');
+            }
+        }else{
+            if (credentials.approvals.length > policy.length){
+                revert InvalidCredentials('Incorrect number of approvals');
+            }
+        }
+        if (burns[keccak256(credentials.approvals[0])]) {
+            revert InvalidCredentials('Credentials have been used already');
         }
         address[] memory signers = new address[](credentials.approvals.length);
         for (uint i = 0; i < credentials.approvals.length; i++) {
@@ -273,33 +288,6 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
         return signers;
     }
 
-    function partialValidateCredentials(
-        Credentials memory credentials,
-        address sender,
-        address to,
-        bytes4 f,
-        bytes memory call
-    ) public view returns (address[] memory) {
-        bytes8[] memory policy = getAssignedPolicy(to, f);
-        return
-            _partialValidateCredentials(credentials, sender, to, call, policy);
-    }
-
-    function validateCredentials(
-        Credentials memory credentials,
-        address sender,
-        address to,
-        bytes4 f,
-        bytes memory call
-    ) public view returns (address[] memory) {
-        bytes8[] memory policy = getAssignedPolicy(to, f);
-        if (credentials.approvals.length != policy.length) {
-            revert InvalidCredentials('Incorrect number of approvals');
-        }
-        return
-            _partialValidateCredentials(credentials, sender, to, call, policy);
-    }
-
     function burnCredentials(Credentials calldata credentials) public {
         bytes32 signerHash = keccak256(
             abi.encode(credentials.to, credentials.call, credentials.timestamp)
@@ -307,16 +295,13 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
         address signer = signerHash.toEthSignedMessageHash().recover(
             credentials.approvals[0]
         );
-        bytes8[] memory policy = getAssignedPolicy(
-            credentials.to,
-            bytes4(credentials.call[:4])
-        );
-        address[] memory signers = _partialValidateCredentials(
+        address[] memory signers = validateCredentials(
             credentials,
             signer,
             credentials.to,
+            bytes4(credentials.call[:4]),
             credentials.call,
-            policy
+            false
         );
         for (uint i = 0; i < signers.length; i++) {
             if (signers[i] == msg.sender) {
