@@ -36,9 +36,6 @@ abstract contract Shieldable {
                 revert InvalidCredentials("The Shield is paused");
             }
         }
-        if (timestamps[credentials.timestamp]){
-            revert InvalidCredentials("Credentials has been used already");
-        }
         uint l = msg.data.length - abi.encode(credentials).length;
         shield.validateCredentials(
             credentials,
@@ -188,7 +185,10 @@ contract Shield is Shieldable, Initializable {
 
     using ECDSA for bytes32;
     
-    function validateCredentials(Credentials memory credentials, address sender, address to, bytes4 f, bytes memory call) public view {
+    function _partialValidateCredentials(Credentials memory credentials, address sender, address to, bytes memory call, bytes8[] memory policy) private view returns(address[] memory){
+        if (timestamps[credentials.timestamp]){
+            revert InvalidCredentials("Credentials has been used already");
+        }
         if (credentials.to != to){
             revert InvalidCredentials("Contract mismatch");
         }
@@ -197,10 +197,6 @@ contract Shield is Shieldable, Initializable {
         }
         if (credentials.approvals.length == 0) {
             revert InvalidCredentials("Approvals cannot be empty");
-        }
-        bytes8[] memory policy = getAssignedPolicy(to, f);
-        if (credentials.approvals.length != policy.length){
-            revert InvalidCredentials("Incorrect number of approvals");
         }
         address[] memory signers = new address[](credentials.approvals.length);
         for (uint i = 0; i < credentials.approvals.length; i++) {
@@ -243,5 +239,19 @@ contract Shield is Shieldable, Initializable {
             }
             signers[i] = signer;
         }
+        return signers;
+    }
+    
+    function partialValidateCredentials(Credentials memory credentials, address sender, address to, bytes4 f, bytes memory call) public view returns(address[] memory){
+        bytes8[] memory policy = getAssignedPolicy(to, f);
+        return _partialValidateCredentials(credentials, sender, to, call, policy);
+    }
+        
+    function validateCredentials(Credentials memory credentials, address sender, address to, bytes4 f, bytes memory call) public view returns(address[] memory){
+        bytes8[] memory policy = getAssignedPolicy(to, f);
+        if (credentials.approvals.length != policy.length){
+            revert InvalidCredentials("Incorrect number of approvals");
+        }
+        return _partialValidateCredentials(credentials, sender, to, call, policy);
     }
 }
