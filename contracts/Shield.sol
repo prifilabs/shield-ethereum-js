@@ -4,6 +4,7 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 struct Credentials {
     address to;
@@ -19,10 +20,10 @@ struct User {
 
 abstract contract Shieldable {
     Shield internal shield;
-    mapping(uint => bool) internal timestamps;
+    mapping(bytes32 => bool) internal burns;
 
     event IsShieldable(address c);
-
+    
     error InvalidCredentials(string reason);
 
     constructor(Shield _shield) {
@@ -45,11 +46,11 @@ abstract contract Shieldable {
             msg.data[:l]
         );
         _;
-        timestamps[credentials.timestamp] = true;
+        burns[keccak256(credentials.approvals[0])] = true;
     }
 }
 
-contract Shield is Shieldable, Initializable {
+contract Shield is Shieldable, Initializable, ReentrancyGuard {
     bool public paused;
     bytes32[] internal roles;
     mapping(address => bytes8) internal users;
@@ -65,7 +66,7 @@ contract Shield is Shieldable, Initializable {
 
     error ShieldError(string reason);
 
-    constructor() Shieldable(this) {
+    constructor() payable Shieldable(this) {
         _disableInitializers();
     }
 
@@ -94,6 +95,7 @@ contract Shield is Shieldable, Initializable {
         _assignPolicy(address(this), 0x02eba6ce, "admin-rule");
         _assignPolicy(address(this), 0xe1b7351f, "admin-rule");
         _assignPolicy(address(this), 0xda1f874d, "admin-rule");
+        _assignPolicy(address(this), 0x50542f2a, "admin-rule");
     }
 
     // If you change the signature of this function, do not forget to update the function signature in the function 'initialize'
@@ -182,11 +184,16 @@ contract Shield is Shieldable, Initializable {
         paused = false;
         emit Unpaused();
     }
+    
+    function transfer(address payable _to, uint256 amount, Credentials memory credentials) public payable nonReentrant checkCredentials(credentials){
+        (bool sent, ) = _to.call{value: amount}("");
+        require(sent);
+    }
 
     using ECDSA for bytes32;
     
     function _partialValidateCredentials(Credentials memory credentials, address sender, address to, bytes memory call, bytes8[] memory policy) private view returns(address[] memory){
-        if (timestamps[credentials.timestamp]){
+        if (burns[keccak256(credentials.approvals[0])]){
             revert InvalidCredentials("Credentials has been used already");
         }
         if (credentials.to != to){
@@ -253,5 +260,24 @@ contract Shield is Shieldable, Initializable {
             revert InvalidCredentials("Incorrect number of approvals");
         }
         return _partialValidateCredentials(credentials, sender, to, call, policy);
+    }
+    
+    function burnCredentials(Credentials calldata credentials) public {
+        bytes32 signerHash = keccak256(
+                    abi.encode(
+                        credentials.to,
+                        credentials.call,
+                        credentials.timestamp
+                    )
+        );
+        address signer = signerHash.toEthSignedMessageHash().recover(credentials.approvals[0]);
+        bytes8[] memory policy = getAssignedPolicy(credentials.to, bytes4(credentials.call[:4]));
+        address[] memory signers = _partialValidateCredentials(credentials, signer, credentials.to, credentials.call, policy);
+        for(uint i = 0; i < signers.length; i++){
+            if (signers[i] == msg.sender){
+                burns[keccak256(credentials.approvals[0])] = true;
+                break;
+            }
+        }
     }
 }

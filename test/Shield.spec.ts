@@ -43,7 +43,7 @@ describe("Shield", function () {
 
       it("Should get the admin assignments", async function () {
           const { shield, alice } = context;
-          for (let f of ['addRoles', 'setUser', 'addPolicy', 'assignPolicy', 'pause', 'unpause']){
+          for (let f of ['addRoles', 'setUser', 'addPolicy', 'assignPolicy', 'pause', 'unpause', 'transfer']){
               // console.log(await shield.contract.interface.getSighash(f));
               expect(await shield.getAssignedPolicy(shield.contract, f)).to.deep.equal([['admin']]);
           }

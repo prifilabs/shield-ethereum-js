@@ -8,15 +8,15 @@ import { Shield, createShield, createCredentials, approveCredentials } from "../
 describe("Wallet Example", function () {
   
     async function deployFactoryFixture(){
-        const [ owner, alice, bob] = await ethers.getSigners();
+        const [ alice, bob] = await ethers.getSigners();
         const FactoryContractFactory = await ethers.getContractFactory("ShieldFactory");
         const factory = await FactoryContractFactory.deploy();
         return { factory, alice, bob };
     }
-  
-    let context;
     
-    describe("Deployment", function () {
+    describe("With Shield", function () {
+        
+      let context;
       
       it("Should deploy a shield", async function () {
             const { factory, alice, bob } = await loadFixture(deployFactoryFixture);
@@ -34,7 +34,7 @@ describe("Wallet Example", function () {
       
       it("Should deploy a shieldable wallet", async function () {
           const { shield, alice } = context;
-          const Wallet = await ethers.getContractFactory("WalletExample");
+          const Wallet = await ethers.getContractFactory("WalletExampleWithShield");
           const balance = ethers.utils.parseEther("100");
           const wallet = await Wallet.connect(alice).deploy(shield.contract.address, {value: balance});
           context = {...context, wallet};
@@ -42,8 +42,8 @@ describe("Wallet Example", function () {
       
       it("Should not allow Alice to withdraw ", async function () {
           const { shield, wallet, alice } = context;
-          const credentials = await createCredentials(alice, wallet, "protectedWithdraw", [1000]);
-          await expect(wallet.connect(alice).protectedWithdraw(1000, credentials)).to.be.revertedWithCustomError(shield.contract, "InvalidCredentials");
+          const credentials = await createCredentials(alice, wallet, "withdraw", [1000]);
+          await expect(wallet.connect(alice).withdraw(1000, credentials)).to.be.revertedWithCustomError(shield.contract, "InvalidCredentials");
       });
       
       it("Should configure the shield to protect the wallet", async function () {
@@ -52,44 +52,43 @@ describe("Wallet Example", function () {
           const policy = [["admin"]];
           const credentials1 = await shield.createCredentialsForAddPolicy(alice, label, policy);
           await shield.addPolicy(alice, label, policy, credentials1);
-          const f = "protectedWithdraw";
+          const f = "withdraw";
           const credentials2 = await shield.createCredentialsForAssignPolicy(alice, wallet, f, label);
           await shield.assignPolicy(alice, wallet, f, label, credentials2);
           context = {...context, wallet};
       });
       
+      it("Should allow Alice to withdraw (1 step)", async function () {
+          const { shield, wallet, alice } = context;
+          const credentials = await createCredentials(alice, wallet, "withdraw", [1000]);
+          await wallet.connect(alice).withdraw(1000, credentials);
+      });
+      
+      it("Should allow Alice to withdraw (2 steps)", async function () {
+          const { shield, wallet, alice, bob } = context;
+          const label = "2-steps-rule";
+          const policy = [["employee"], ["admin"]];
+          const credentials1 = await shield.createCredentialsForAddPolicy(alice, label, policy);
+          await shield.addPolicy(alice, label, policy, credentials1);
+          const f = "withdraw";
+          const credentials2 = await shield.createCredentialsForAssignPolicy(alice, wallet, f, label);
+          await shield.assignPolicy(alice, wallet, f, label, credentials2);
+          const credentials3 = await createCredentials(bob, wallet, "withdraw", [1000]);
+          const credentials4 = await approveCredentials(alice, credentials3);
+          await wallet.connect(bob).withdraw(1000, credentials4);
+      });
+      
     });
     
-    describe("One Approval Withdraw", function () {
+    describe("Withdraw without Shield", function () {
 
-        it("Should allow Alice to withdraw (unprotected)", async function () {
-            const { shield, wallet, alice } = context;
-            await wallet.connect(alice).unprotectedWithdraw(1000);
+        it("Should allow to withdraw", async function () {
+            const [ alice ] = await ethers.getSigners();
+            const Wallet = await ethers.getContractFactory("WalletExampleWithoutShield");
+            const balance = ethers.utils.parseEther("100");
+            const wallet = await Wallet.connect(alice).deploy({value: balance});
+            await wallet.connect(alice).withdraw(1000);
         });
-
-        it("Should allow Alice to withdraw ", async function () {
-            const { shield, wallet, alice } = context;
-            const credentials = await createCredentials(alice, wallet, "protectedWithdraw", [1000]);
-            await wallet.connect(alice).protectedWithdraw(1000, credentials);
-        });
-
     });
     
-    describe("Two Approvals Withdraw", function () {
-
-        it("Should allow Alice to withdraw ", async function () {
-            const { shield, wallet, alice, bob } = context;
-            const label = "2-steps-rule";
-            const policy = [["employee"], ["admin"]];
-            const credentials1 = await shield.createCredentialsForAddPolicy(alice, label, policy);
-            await shield.addPolicy(alice, label, policy, credentials1);
-            const f = "protectedWithdraw";
-            const credentials2 = await shield.createCredentialsForAssignPolicy(alice, wallet, f, label);
-            await shield.assignPolicy(alice, wallet, f, label, credentials2);
-            const credentials3 = await createCredentials(bob, wallet, "protectedWithdraw", [1000]);
-            const credentials4 = await approveCredentials(alice, credentials3);
-            await wallet.connect(bob).protectedWithdraw(1000, credentials4);
-        });
-
-    });
 });

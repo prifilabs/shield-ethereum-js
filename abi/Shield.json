@@ -1,7 +1,7 @@
 [
   {
     "inputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "constructor"
   },
   {
@@ -278,6 +278,41 @@
   {
     "inputs": [
       {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "call",
+            "type": "bytes"
+          },
+          {
+            "internalType": "uint256",
+            "name": "timestamp",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes[]",
+            "name": "approvals",
+            "type": "bytes[]"
+          }
+        ],
+        "internalType": "struct Credentials",
+        "name": "credentials",
+        "type": "tuple"
+      }
+    ],
+    "name": "burnCredentials",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "to",
         "type": "address"
@@ -537,6 +572,51 @@
     "name": "setUser",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address payable",
+        "name": "_to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "call",
+            "type": "bytes"
+          },
+          {
+            "internalType": "uint256",
+            "name": "timestamp",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes[]",
+            "name": "approvals",
+            "type": "bytes[]"
+          }
+        ],
+        "internalType": "struct Credentials",
+        "name": "credentials",
+        "type": "tuple"
+      }
+    ],
+    "name": "transfer",
+    "outputs": [],
+    "stateMutability": "payable",
     "type": "function"
   },
   {
