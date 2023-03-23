@@ -29,7 +29,7 @@ describe('Shield', function () {
             const { factory, alice, bob } = await loadFixture(
                 deployFactoryFixture
             )
-            const shield = await createShield(
+            const { shield } = await createShield(
                 alice,
                 'MyShield',
                 ['admin', 'employee'],
@@ -37,7 +37,7 @@ describe('Shield', function () {
                 [['admin']],
                 factory
             )
-            const badShield = await createShield(
+            const { shield: badShield } = await createShield(
                 bob,
                 'BadShield',
                 ['admin'],
@@ -47,10 +47,15 @@ describe('Shield', function () {
             )
             context = { factory, shield, badShield, alice, bob }
         })
-        
+
         it('Should get all deployed shields', async function () {
             const { factory, shield, badShield, alice } = context
-            expect(await getShields(ethers.provider, alice.address, factory)).to.have.members([shield.contract.address, badShield.contract.address]);
+            expect(
+                await getShields(ethers.provider, alice.address, factory)
+            ).to.have.members([
+                shield.contract.address,
+                badShield.contract.address,
+            ])
         })
 
         it('Should get all roles', async function () {
@@ -60,10 +65,12 @@ describe('Shield', function () {
                 'employee',
             ])
         })
-        
+
         it('Should get all users', async function () {
             const { shield, alice } = context
-            expect(await shield.getUsers(ethers.provider)).to.have.property(alice.address).which.have.members(['admin', 'employee']);
+            expect(await shield.getUsers(ethers.provider))
+                .to.have.property(alice.address)
+                .which.have.members(['admin', 'employee'])
         })
 
         it('Should get roles for a user', async function () {
@@ -73,12 +80,12 @@ describe('Shield', function () {
                 'employee',
             ])
         })
-        
+
         it('Should get all policies', async function () {
             const { shield, alice } = context
-            expect(await shield.getPolicies(ethers.provider)).to.have.property('admin-policy').which.deep.equal([
-                ['admin'],
-            ])
+            expect(await shield.getPolicies(ethers.provider))
+                .to.have.property('admin-policy')
+                .which.deep.equal([['admin']])
         })
 
         it('Should get the admin policy', async function () {
@@ -87,11 +94,13 @@ describe('Shield', function () {
                 ['admin'],
             ])
         })
-        
+
         it('Should get all assignments', async function () {
             const { shield, alice } = context
-            const assignments = await shield.getAssignedPolicies(ethers.provider);
-            expect(assignments).to.have.property(shield.contract.address);
+            const assignments = await shield.getAssignedPolicies(
+                ethers.provider
+            )
+            expect(assignments).to.have.property(shield.contract.address)
             for (let f of [
                 'addRoles',
                 'setUser',
@@ -101,9 +110,10 @@ describe('Shield', function () {
                 'unpause',
             ]) {
                 // console.log(await shield.contract.interface.getSighash(f));
-                expect(
-                    assignments[shield.contract.address]
-                ).to.have.property(f, 'admin-policy');
+                expect(assignments[shield.contract.address]).to.have.property(
+                    f,
+                    'admin-policy'
+                )
             }
         })
 
@@ -128,7 +138,6 @@ describe('Shield', function () {
             const { shield, alice } = context
             expect(await shield.isPaused()).to.be.false
         })
-        
     })
 
     describe('Admin', function () {
@@ -158,8 +167,12 @@ describe('Shield', function () {
             await shield.setUser(alice, bob.address, roles, credentials)
             expect(await shield.getUser(bob.address)).to.have.members(roles)
             const users = await shield.getUsers(ethers.provider)
-            expect(users).to.have.property(alice.address).which.have.members(['admin', 'employee']);
-            expect(users).to.have.property(bob.address).which.have.members(['employee', 'engineer']);
+            expect(users)
+                .to.have.property(alice.address)
+                .which.have.members(['admin', 'employee'])
+            expect(users)
+                .to.have.property(bob.address)
+                .which.have.members(['employee', 'engineer'])
         })
 
         it('Should add a policy', async function () {
@@ -193,7 +206,9 @@ describe('Shield', function () {
                 credentials
             )
             const policy = await shield.getPolicy(label)
-            expect(await shield.getAssignedPolicy(shield.contract.address, f)).to.deep.equal(policy);
+            expect(
+                await shield.getAssignedPolicy(shield.contract.address, f)
+            ).to.deep.equal(policy)
         })
 
         it('Should add a policy and set an assignment', async function () {
@@ -256,28 +271,45 @@ describe('Shield', function () {
             await shield.unpause(bob, credentials2)
             expect(await shield.isPaused()).to.be.false
         })
-        
+
         it('Should transfer eth', async function () {
             const { shield, alice } = context
-            const amount = ethers.utils.parseEther("1.0");
-            await alice.sendTransaction({to: shield.contract.address, value: amount})
-            const credentials = await shield.createCredentialsForTransfer(alice, alice.address, amount);
-            expect(await shield.transfer(alice, alice.address, amount, credentials)).to.changeEtherBalance(alice, amount).and.to.changeEtherBalance(shield, -amount);
+            const amount = ethers.utils.parseEther('1.0')
+            await alice.sendTransaction({
+                to: shield.contract.address,
+                value: amount,
+            })
+            const credentials = await shield.createCredentialsForTransfer(
+                alice,
+                alice.address,
+                amount
+            )
+            expect(
+                await shield.transfer(alice, alice.address, amount, credentials)
+            )
+                .to.changeEtherBalance(alice, amount)
+                .and.to.changeEtherBalance(shield, -amount)
         })
-        
+
         it('Should check a credential', async function () {
             const { shield, alice } = context
             const credentials = await shield.createCredentialsForPause(alice)
-            const { to, func, timestamp, approvals } = await shield.checkCredentials(credentials)
+            const { to, func, timestamp, approvals } =
+                await shield.checkCredentials(credentials)
             expect(to).to.equal(shield.contract.address)
-            expect(func).to.equal("pause")
+            expect(func).to.equal('pause')
             expect(timestamp).to.be.above(0)
             expect(approvals).to.have.members([alice.address])
-            const credentials2 = await shield.createCredentialsForAddRoles(alice, ["new"]);
+            const credentials2 = await shield.createCredentialsForAddRoles(
+                alice,
+                ['new']
+            )
             const { args } = await shield.checkCredentials(credentials2)
-            expect(args).to.deep.equal([[ethers.utils.formatBytes32String("new")]])
+            expect(args).to.deep.equal([
+                [ethers.utils.formatBytes32String('new')],
+            ])
         })
-        
+
         it('Should burn a credential', async function () {
             const { shield, alice } = context
             const credentials = await shield.createCredentialsForPause(alice)

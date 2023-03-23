@@ -1,5 +1,5 @@
 import { ethers } from 'ethers'
-import { getBytesFromRoles, parseEvents, getRolesFromBytes } from './utils'
+import { getBytesFromRoles, getRolesFromBytes } from './utils'
 import { Credentials } from './types'
 
 import CONFIG from './config.json'
@@ -112,7 +112,7 @@ export async function createShield(
     users: any[],
     policy: any[],
     factory: ethers.Contract
-): Promise<Shield> {
+): Promise<{ tx: ethers.Transaction; shield: Shield }> {
     const _name = ethers.utils.formatBytes32String(name)
     const _roles = roles.map(ethers.utils.formatBytes32String)
     const _users = users.map(function (user: { roles: string[]; addr: any }) {
@@ -126,11 +126,15 @@ export async function createShield(
         const rolesAssigned = step.map(ethers.utils.formatBytes32String)
         return getBytesFromRoles(rolesAssigned, _roles)
     })
-    const shieldTx = await factory
+    const tx = await factory
         .connect(signer)
         .createShield(_name, _roles, _users, _policy)
-    const [_, address] = await parseEvents('ShieldCreated', shieldTx)
-    return instantiateShield(signer, address)
+    const receipt = await tx.wait()
+    const event = receipt.events.find(
+        (event) => event.event === 'ShieldCreated'
+    )
+    const [_, address] = event?.args
+    return { tx, shield: await instantiateShield(signer, address) }
 }
 
 export async function instantiateShield(
@@ -172,7 +176,7 @@ export class Shield {
         signer: ethers.Signer,
         roles: string[],
         credentials: Credentials
-    ) {
+    ): Promise<ethers.Transaction> {
         const newRoles = roles.map(ethers.utils.formatBytes32String)
         return this.contract.connect(signer).addRoles(newRoles, credentials)
     }
@@ -225,7 +229,7 @@ export class Shield {
         address: any,
         roles: string[],
         credentials: Credentials
-    ) {
+    ): Promise<ethers.Transaction> {
         const existingRoles = await this.contract.getRoles()
         const newRoles = getBytesFromRoles(
             roles.map(ethers.utils.formatBytes32String),
@@ -295,7 +299,7 @@ export class Shield {
         label: string,
         policy: string[][],
         credentials: Credentials
-    ) {
+    ): Promise<ethers.Transaction> {
         const roles = await this.contract.getRoles()
         const newLabel = ethers.utils.formatBytes32String(label)
         const newPolicy = policy.map(function (step: string[]) {
@@ -371,7 +375,7 @@ export class Shield {
         func: string,
         label: string,
         credentials: Credentials
-    ) {
+    ): Promise<ethers.Transaction> {
         if (!(to in this.abis)) {
             throw new Error(`unknown abi for ${to}`)
         }
@@ -392,7 +396,10 @@ export class Shield {
         return createCredentials(signer, this.contract, 'pause', [])
     }
 
-    async pause(signer: ethers.Signer, credentials: Credentials) {
+    async pause(
+        signer: ethers.Signer,
+        credentials: Credentials
+    ): Promise<ethers.Transaction> {
         return this.contract.connect(signer).pause(credentials)
     }
 
@@ -402,7 +409,10 @@ export class Shield {
         return createCredentials(signer, this.contract, 'unpause', [])
     }
 
-    async unpause(signer: ethers.Signer, credentials: Credentials) {
+    async unpause(
+        signer: ethers.Signer,
+        credentials: Credentials
+    ): Promise<ethers.Transaction> {
         return this.contract.connect(signer).unpause(credentials)
     }
 
@@ -422,11 +432,14 @@ export class Shield {
         to: string,
         amount: number,
         credentials: Credentials
-    ) {
+    ): Promise<ethers.Transaction> {
         return this.contract.connect(signer).transfer(to, amount, credentials)
     }
 
-    async burnCredentials(signer: ethers.Signer, credentials: Credentials) {
+    async burnCredentials(
+        signer: ethers.Signer,
+        credentials: Credentials
+    ): Promise<ethers.Transaction> {
         return this.contract.connect(signer).burnCredentials(credentials)
     }
 

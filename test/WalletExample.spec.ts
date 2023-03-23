@@ -34,13 +34,13 @@ describe('Wallet Example', function () {
                 { addr: bob.address, roles: ['employee'] },
             ]
             const policy = [['admin']]
-            const shield = await createShield(
+            const { shield } = await createShield(
                 alice,
                 name,
                 roles,
                 users,
                 policy,
-                factory            
+                factory
             )
             context = { shield, alice, bob }
         })
@@ -55,7 +55,7 @@ describe('Wallet Example', function () {
                 shield.contract.address,
                 { value: balance }
             )
-            shield.addInterface(wallet.address, wallet.interface);
+            shield.addInterface(wallet.address, wallet.interface)
             context = { ...context, wallet }
         })
 
@@ -92,7 +92,13 @@ describe('Wallet Example', function () {
                 f,
                 label
             )
-            await shield.assignPolicy(alice, wallet.address, f, label, credentials2)
+            await shield.assignPolicy(
+                alice,
+                wallet.address,
+                f,
+                label,
+                credentials2
+            )
 
             context = { ...context, wallet }
         })
@@ -125,7 +131,13 @@ describe('Wallet Example', function () {
                 f,
                 label
             )
-            await shield.assignPolicy(alice, wallet.address, f, label, credentials2)
+            await shield.assignPolicy(
+                alice,
+                wallet.address,
+                f,
+                label,
+                credentials2
+            )
             const credentials3 = await createCredentials(
                 bob,
                 wallet,

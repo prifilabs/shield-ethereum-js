@@ -6,7 +6,10 @@ export declare function approveCredentials(signer: ethers.Signer, credentials: C
 export declare function encodeCredentials(credentials: Credentials): string;
 export declare function decodeCredentials(encodedCredentials: string): Credentials;
 export declare function getShields(provider: any, address: string, factory: ethers.Contract): Promise<string[]>;
-export declare function createShield(signer: ethers.Signer, name: string, roles: any[], users: any[], policy: any[], factory: ethers.Contract): Promise<Shield>;
+export declare function createShield(signer: ethers.Signer, name: string, roles: any[], users: any[], policy: any[], factory: ethers.Contract): Promise<{
+    tx: ethers.Transaction;
+    shield: Shield;
+}>;
 export declare function instantiateShield(signer: ethers.Signer, address: string): Promise<Shield>;
 export declare class Shield {
     contract: ethers.Contract;
@@ -17,19 +20,19 @@ export declare class Shield {
     addInterface(address: string, iface: ethers.utils.Interface): void;
     getRoles(): Promise<string[]>;
     createCredentialsForAddRoles(signer: ethers.Signer, roles: string[]): Promise<Credentials>;
-    addRoles(signer: ethers.Signer, roles: string[], credentials: Credentials): Promise<any>;
+    addRoles(signer: ethers.Signer, roles: string[], credentials: Credentials): Promise<ethers.Transaction>;
     getUsers(provider: any): Promise<{
         [address: string]: string[];
     }>;
     getUser(address: string): Promise<string[]>;
     createCredentialsForSetUser(signer: ethers.Signer, address: any, roles: string[]): Promise<Credentials>;
-    setUser(signer: ethers.Signer, address: any, roles: string[], credentials: Credentials): Promise<any>;
+    setUser(signer: ethers.Signer, address: any, roles: string[], credentials: Credentials): Promise<ethers.Transaction>;
     getPolicies(provider: any): Promise<{
         [label: string]: string[][];
     }>;
     getPolicy(label: string): Promise<string[][]>;
     createCredentialsForAddPolicy(signer: ethers.Signer, label: string, policy: string[][]): Promise<Credentials>;
-    addPolicy(signer: ethers.Signer, label: string, policy: string[][], credentials: Credentials): Promise<any>;
+    addPolicy(signer: ethers.Signer, label: string, policy: string[][], credentials: Credentials): Promise<ethers.Transaction>;
     getAssignedPolicies(provider: any): Promise<{
         [address: string]: {
             [func: string]: string;
@@ -37,15 +40,15 @@ export declare class Shield {
     }>;
     getAssignedPolicy(to: string, func: string): Promise<string>;
     createCredentialsForAssignPolicy(signer: ethers.Signer, to: string, func: string, label: string): Promise<Credentials>;
-    assignPolicy(signer: ethers.Signer, to: string, func: string, label: string, credentials: Credentials): Promise<any>;
+    assignPolicy(signer: ethers.Signer, to: string, func: string, label: string, credentials: Credentials): Promise<ethers.Transaction>;
     isPaused(): Promise<boolean>;
     createCredentialsForPause(signer: ethers.Signer): Promise<Credentials>;
-    pause(signer: ethers.Signer, credentials: Credentials): Promise<any>;
+    pause(signer: ethers.Signer, credentials: Credentials): Promise<ethers.Transaction>;
     createCredentialsForUnpause(signer: ethers.Signer): Promise<Credentials>;
-    unpause(signer: ethers.Signer, credentials: Credentials): Promise<any>;
+    unpause(signer: ethers.Signer, credentials: Credentials): Promise<ethers.Transaction>;
     createCredentialsForTransfer(signer: ethers.Signer, to: string, amount: number): Promise<Credentials>;
-    transfer(signer: ethers.Signer, to: string, amount: number, credentials: Credentials): Promise<any>;
-    burnCredentials(signer: ethers.Signer, credentials: Credentials): Promise<any>;
+    transfer(signer: ethers.Signer, to: string, amount: number, credentials: Credentials): Promise<ethers.Transaction>;
+    burnCredentials(signer: ethers.Signer, credentials: Credentials): Promise<ethers.Transaction>;
     checkCredentials(credentials: Credentials, full?: boolean): Promise<{
         to: string;
         func: string;

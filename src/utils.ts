@@ -45,12 +45,3 @@ function numberToBytes(number: string | number | bigint | boolean) {
     byteArray.setBigUint64(0, BigInt(number), false)
     return utils.hexlify(new Uint8Array(buffer))
 }
-
-export async function parseEvents(name: string, tx: { wait: () => any }) {
-    const receipt = await tx.wait()
-    const event = receipt.events.find(
-        (event: { event: any }) => event.event === name
-    )
-    const args = event?.args
-    return args
-}
