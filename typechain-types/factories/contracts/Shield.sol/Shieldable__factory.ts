@@ -27,11 +27,17 @@ const _abi = [
       {
         indexed: false,
         internalType: "address",
-        name: "c",
+        name: "shieldable",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "address",
+        name: "shield",
         type: "address",
       },
     ],
-    name: "IsShieldable",
+    name: "ShieldableDeployed",
     type: "event",
   },
 ] as const;

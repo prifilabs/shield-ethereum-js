@@ -1,32 +1,30 @@
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { Provider } from '@ethersproject/abstract-provider'
-import { Signer, Contract, constants, utils, ContractInterface } from 'ethers'
+import { ethers } from 'ethers'
 import { getBytesFromRoles, parseEvents, getRolesFromBytes } from './utils'
 import { Credentials } from './types'
 
-function signData(signer: Signer, types: string[], values: any[]) {
-    let message = utils.arrayify(
-        utils.keccak256(utils.defaultAbiCoder.encode(types, values))
+function signData(signer: ethers.Signer, types: string[], values: any[]) {
+    let message = ethers.utils.arrayify(
+        ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(types, values))
     )
     return signer.signMessage(message)
 }
 
 function getSigner(types: string[], values: any[], signature: string) {
-    let message = utils.arrayify(
-        utils.keccak256(utils.defaultAbiCoder.encode(types, values))
+    let message = ethers.utils.arrayify(
+        ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(types, values))
     )
-    return utils.verifyMessage(message, signature)
+    return ethers.utils.verifyMessage(message, signature)
 }
 
 export async function createCredentials(
-    signer: Signer,
-    to: Contract,
+    signer: ethers.Signer,
+    to: ethers.Contract,
     fragment: string,
     args: any[]
 ): Promise<Credentials> {
     const nullCredential = {
-        to: constants.AddressZero,
-        call: constants.HashZero,
+        to: ethers.constants.AddressZero,
+        call: ethers.constants.HashZero,
         timestamp: 0,
         approvals: [],
     }
@@ -38,7 +36,7 @@ export async function createCredentials(
         return input.type
     })
     types = types.slice(0, -1)
-    const len = utils.defaultAbiCoder.encode(types, args).length
+    const len = ethers.utils.defaultAbiCoder.encode(types, args).length
     call = call.slice(0, len + 8)
     const timestamp = Math.floor(new Date().getTime())
     const signature = await signData(
@@ -50,7 +48,7 @@ export async function createCredentials(
 }
 
 export async function approveCredentials(
-    signer: Signer,
+    signer: ethers.Signer,
     credentials: Credentials
 ): Promise<Credentials> {
     const { to, call, timestamp, approvals } = credentials
@@ -74,28 +72,38 @@ export function decodeCredentials(encodedCredentials: string): Credentials {
     return { to, call, timestamp, approvals: approvals.map(atob) }
 }
 
-export async function getAllShieldAddresses(signer: Signer) {}
+export async function getShields(provider, address: string, factory?: ethers.Contract) {
+    const currentBlock = await provider.getBlockNumber()
+    const firstBlock = factory.deployTransaction.blockNumber
+    let events = await factory.queryFilter('UserAdded', firstBlock, currentBlock)
+    const shields = new Set<string>();
+    events.forEach(function(event){
+        const [shield, user] = event.args;
+        shields.add(shield);
+    });
+    return Array.from(shields);
+}
 
 export async function createShield(
-    signer: SignerWithAddress,
+    signer: ethers.Signer,
     name: string,
     roles: any[],
     users: any[],
     policy: any[],
-    factory?: Contract,
-    iface?: utils.Interface
+    factory?: ethers.Contract,
+    iface?: ethers.utils.Interface
 ) {
-    const _name = utils.formatBytes32String(name)
-    const _roles = roles.map(utils.formatBytes32String)
+    const _name = ethers.utils.formatBytes32String(name)
+    const _roles = roles.map(ethers.utils.formatBytes32String)
     const _users = users.map(function (user: { roles: string[]; addr: any }) {
-        const rolesAssigned = user.roles.map(utils.formatBytes32String)
+        const rolesAssigned = user.roles.map(ethers.utils.formatBytes32String)
         return {
             addr: user.addr,
             roles: getBytesFromRoles(rolesAssigned, _roles),
         }
     })
     const _policy = policy.map(function (step: string[]) {
-        const rolesAssigned = step.map(utils.formatBytes32String)
+        const rolesAssigned = step.map(ethers.utils.formatBytes32String)
         return getBytesFromRoles(rolesAssigned, _roles)
     })
     const shieldTx = await factory
@@ -106,56 +114,67 @@ export async function createShield(
 }
 
 export async function createShieldInstance(
-    signer: Signer | Provider,
+    signer: ethers.Signer,
     address: string,
-    iface?: ContractInterface
+    iface?: ethers.ContractInterface
 ) {
-    let contract = new Contract(address, iface, signer)
+    let contract = new ethers.Contract(address, iface, signer)
     return new Shield(contract)
 }
 
 export class Shield {
-    public contract: Contract
+    public contract: ethers.Contract
 
-    constructor(contract: Contract) {
+    constructor(contract: ethers.Contract) {
         this.contract = contract
     }
 
     async getRoles() {
         const roles = await this.contract.getRoles()
-        return roles.map(utils.parseBytes32String)
+        return roles.map(ethers.utils.parseBytes32String)
     }
 
-    async createCredentialsForAddRoles(signer: Signer, roles: string[]) {
-        const newRoles = roles.map(utils.formatBytes32String)
+    async createCredentialsForAddRoles(signer: ethers.Signer, roles: string[]) {
+        const newRoles = roles.map(ethers.utils.formatBytes32String)
         return createCredentials(signer, this.contract, 'addRoles', [newRoles])
     }
 
     async addRoles(
-        signer: string | Signer | Provider,
+        signer: ethers.Signer,
         roles: string[],
-        credentials: any
+        credentials: Credentials
     ) {
-        const newRoles = roles.map(utils.formatBytes32String)
+        const newRoles = roles.map(ethers.utils.formatBytes32String)
         return this.contract.connect(signer).addRoles(newRoles, credentials)
     }
 
-    async getUsers() {}
+    async getUsers(provider) {
+        const currentBlock = await provider.getBlockNumber()
+        const firstBlock = (await this.contract.born()).toNumber()
+        let events = await this.contract.queryFilter('UserSet', firstBlock, currentBlock)
+        const roles = await this.contract.getRoles()
+        const users = {};
+        events.forEach(function(event){
+            const [user, bits] = event.args;
+            users[user] = getRolesFromBytes(bits, roles).map(ethers.utils.parseBytes32String)
+        });
+        return users;
+    }
 
     async getUser(address: any) {
         const roles = await this.contract.getRoles()
         const bits = await this.contract.getUser(address)
-        return getRolesFromBytes(bits, roles).map(utils.parseBytes32String)
+        return getRolesFromBytes(bits, roles).map(ethers.utils.parseBytes32String)
     }
 
     async createCredentialsForSetUser(
-        signer: Signer,
+        signer: ethers.Signer,
         address: any,
         roles: string[]
     ) {
         const existingRoles = await this.contract.getRoles()
         const newRoles = getBytesFromRoles(
-            roles.map(utils.formatBytes32String),
+            roles.map(ethers.utils.formatBytes32String),
             existingRoles
         )
         return createCredentials(signer, this.contract, 'setUser', [
@@ -165,14 +184,14 @@ export class Shield {
     }
 
     async setUser(
-        signer: string | Signer | Provider,
+        signer: ethers.Signer,
         address: any,
         roles: string[],
-        credentials: any
+        credentials: Credentials
     ) {
         const existingRoles = await this.contract.getRoles()
         const newRoles = getBytesFromRoles(
-            roles.map(utils.formatBytes32String),
+            roles.map(ethers.utils.formatBytes32String),
             existingRoles
         )
         return this.contract
@@ -180,27 +199,42 @@ export class Shield {
             .setUser(address, newRoles, credentials)
     }
 
-    async getPolicys() {}
+    async getPolicies(provider) {
+        const currentBlock = await provider.getBlockNumber()
+        const firstBlock = (await this.contract.born()).toNumber()
+        let events = await this.contract.queryFilter('PolicyAdded', firstBlock, currentBlock)
+        const roles = await this.contract.getRoles()
+        const policies = {};
+        events.forEach(function(event){
+            const [label, policy] = event.args;
+            const decodedLabel = ethers.utils.parseBytes32String(label);
+            const decodedPolicy = policy.map(function (bits: any) {
+                                return getRolesFromBytes(bits, roles).map(ethers.utils.parseBytes32String)
+                            });
+            policies[decodedLabel] = decodedPolicy;
+        });
+        return policies;
+    }
 
     async getPolicy(label: string) {
         const roles = await this.contract.getRoles()
         const policy = await this.contract.getPolicy(
-            utils.formatBytes32String(label)
+            ethers.utils.formatBytes32String(label)
         )
         return policy.map(function (bits: any) {
-            return getRolesFromBytes(bits, roles).map(utils.parseBytes32String)
+            return getRolesFromBytes(bits, roles).map(ethers.utils.parseBytes32String)
         })
     }
 
     async createCredentialsForAddPolicy(
-        signer: Signer,
+        signer: ethers.Signer,
         label: string,
         policy: any[]
     ) {
         const roles = await this.contract.getRoles()
-        const newLabel = utils.formatBytes32String(label)
+        const newLabel = ethers.utils.formatBytes32String(label)
         const newPolicy = policy.map(function (step: string[]) {
-            return getBytesFromRoles(step.map(utils.formatBytes32String), roles)
+            return getBytesFromRoles(step.map(ethers.utils.formatBytes32String), roles)
         })
         return createCredentials(signer, this.contract, 'addPolicy', [
             newLabel,
@@ -209,43 +243,59 @@ export class Shield {
     }
 
     async addPolicy(
-        signer: string | Signer | Provider,
+        signer: ethers.Signer,
         label: string,
         policy: any[],
-        credentials: any
+        credentials: Credentials
     ) {
         const roles = await this.contract.getRoles()
-        const newLabel = utils.formatBytes32String(label)
+        const newLabel = ethers.utils.formatBytes32String(label)
         const newPolicy = policy.map(function (step: string[]) {
-            return getBytesFromRoles(step.map(utils.formatBytes32String), roles)
+            return getBytesFromRoles(step.map(ethers.utils.formatBytes32String), roles)
         })
         return this.contract
             .connect(signer)
             .addPolicy(newLabel, newPolicy, credentials)
     }
-
-    async getAssignedPolicies() {}
+    
+    async getAssignedPolicies(provider) {
+        const currentBlock = await provider.getBlockNumber()
+        const firstBlock = (await this.contract.born()).toNumber()
+        let events = await this.contract.queryFilter('PolicyAssigned', firstBlock, currentBlock)
+        const assignments = {};
+        const iface = this.contract.interface;
+        events.forEach(function(event){
+            const [to, sig, label] = event.args;
+            if (!(to in assignments)){
+                assignments[to] = {};
+            }
+            const decodedLabel = ethers.utils.parseBytes32String(label);
+            const f = iface.getFunction(sig).name;
+            assignments[to][f] = decodedLabel;
+        });
+        return assignments;
+    }
 
     async getAssignedPolicy(
-        to: { interface: { getSighash: (arg0: any) => any }; address: any },
-        f: any
+        to: ethers.Contract,
+        f: string
     ) {
         const roles = await this.contract.getRoles()
         let sig = to.interface.getSighash(f)
         const policy = await this.contract.getAssignedPolicy(to.address, sig)
         return policy.map(function (bits: any) {
-            return getRolesFromBytes(bits, roles).map(utils.parseBytes32String)
+            return getRolesFromBytes(bits, roles).map(ethers.utils.parseBytes32String)
         })
     }
 
     async createCredentialsForAssignPolicy(
-        signer: Signer,
-        to: { interface: { getSighash: (arg0: any) => any }; address: any },
-        f: any,
+        signer: ethers.Signer,
+        to: ethers.Contract,
+        f: string,
         label: string
     ) {
         const sig = to.interface.getSighash(f)
-        const newLabel = utils.formatBytes32String(label)
+        const newLabel = ethers.utils.formatBytes32String(label)
         return createCredentials(signer, this.contract, 'assignPolicy', [
             to.address,
             sig,
@@ -254,14 +304,14 @@ export class Shield {
     }
 
     async assignPolicy(
-        signer: string | Signer | Provider,
-        to: { interface: { getSighash: (arg0: any) => any }; address: any },
-        f: any,
+        signer: ethers.Signer,
+        to: ethers.Contract,
+        f: string,
         label: string,
-        credentials: any
+        credentials: Credentials
     ) {
         const sig = to.interface.getSighash(f)
-        const newLabel = utils.formatBytes32String(label)
+        const newLabel = ethers.utils.formatBytes32String(label)
         return this.contract
             .connect(signer)
             .assignPolicy(to.address, sig, newLabel, credentials)
@@ -271,41 +321,35 @@ export class Shield {
         return this.contract.paused()
     }
 
-    async createCredentialsForPause(signer: Signer) {
+    async createCredentialsForPause(signer: ethers.Signer) {
         return createCredentials(signer, this.contract, 'pause', [])
     }
 
-    async pause(signer: string | Signer | Provider, credentials: any) {
+    async pause(signer: ethers.Signer, credentials: Credentials) {
         return this.contract.connect(signer).pause(credentials)
     }
 
-    async createCredentialsForUnpause(signer: Signer) {
+    async createCredentialsForUnpause(signer: ethers.Signer) {
         return createCredentials(signer, this.contract, 'unpause', [])
     }
 
-    async unpause(signer: string | Signer | Provider, credentials: any) {
+    async unpause(signer: ethers.Signer, credentials: Credentials) {
         return this.contract.connect(signer).unpause(credentials)
     }
     
-    async createCredentialsForTransfer(signer: Signer, to: string, amount: number) {
+    async createCredentialsForTransfer(signer: ethers.Signer, to: string, amount: number) {
         return createCredentials(signer, this.contract, 'transfer', [to, amount])
     }
 
-    async transfer(signer: string | Signer | Provider, to: string, amount: number, credentials: any) {
+    async transfer(signer: ethers.Signer, to: string, amount: number, credentials: Credentials) {
         return this.contract.connect(signer).transfer(to, amount, credentials)
     }
 
-    async burnCredentials(signer: string | Signer | Provider, credentials: any) {
+    async burnCredentials(signer: ethers.Signer, credentials: Credentials) {
         return this.contract.connect(signer).burnCredentials(credentials)
     }
 
-    async validateCredentials(credentials: {
-        to: any
-        call: string | any[]
-        timestamp: any
-        approvals: string[]
-        signer: any
-    }, full: boolean):Promise<string[]> {
+    async validateCredentials(credentials: Credentials, full: boolean):Promise<string[]> {
         const signer = await getSigner(
             ['address', 'bytes', 'uint'],
             [credentials.to, credentials.call, credentials.timestamp],
@@ -313,7 +357,7 @@ export class Shield {
         );
         return this.contract.validateCredentials(
             credentials,
-            credentials.signer,
+            signer,
             credentials.to,
             credentials.call.slice(0, 10),
             credentials.call,

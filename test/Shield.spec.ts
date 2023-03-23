@@ -9,6 +9,7 @@ import {
     createShieldInstance,
     createCredentials,
     approveCredentials,
+    getShields,
 } from '../src/index'
 
 describe('Shield', function () {
@@ -51,28 +52,64 @@ describe('Shield', function () {
             )
             context = { factory, shield, badShield, alice, bob }
         })
+        
+        it('Should get all deployed shields', async function () {
+            const { factory, shield, badShield, alice } = context
+            expect(await getShields(ethers.provider, alice.address, factory)).to.have.members([shield.contract.address, badShield.contract.address]);
+        })
 
-        it('Should get the roles', async function () {
+        it('Should get all roles', async function () {
             const { shield, alice } = context
             expect(await shield.getRoles()).to.have.members([
                 'admin',
                 'employee',
             ])
         })
+        
+        it('Should get all users', async function () {
+            const { shield, alice } = context
+            expect(await shield.getUsers(ethers.provider)).to.have.property(alice.address).which.have.members(['admin', 'employee']);
+        })
 
-        it('Should get the users', async function () {
+        it('Should get roles for a user', async function () {
             const { shield, alice } = context
             expect(await shield.getUser(alice.address)).to.have.members([
                 'admin',
                 'employee',
             ])
         })
-
-        it('Should get the admin rule', async function () {
+        
+        it('Should get all policies', async function () {
             const { shield, alice } = context
-            expect(await shield.getPolicy('admin-rule')).to.deep.equal([
+            expect(await shield.getPolicies(ethers.provider)).to.have.property('admin-policy').which.deep.equal([
                 ['admin'],
             ])
+        })
+
+        it('Should get the admin policy', async function () {
+            const { shield, alice } = context
+            expect(await shield.getPolicy('admin-policy')).to.deep.equal([
+                ['admin'],
+            ])
+        })
+        
+        it('Should get all assignments', async function () {
+            const { shield, alice } = context
+            const assignments = await shield.getAssignedPolicies(ethers.provider);
+            expect(assignments).to.have.property(shield.contract.address);
+            for (let f of [
+                'addRoles',
+                'setUser',
+                'addPolicy',
+                'assignPolicy',
+                'pause',
+                'unpause',
+            ]) {
+                // console.log(await shield.contract.interface.getSighash(f));
+                expect(
+                    assignments[shield.contract.address]
+                ).to.have.property(f, 'admin-policy');
+            }
         })
 
         it('Should get the admin assignments', async function () {
@@ -125,9 +162,12 @@ describe('Shield', function () {
             )
             await shield.setUser(alice, bob.address, roles, credentials)
             expect(await shield.getUser(bob.address)).to.have.members(roles)
+            const users = await shield.getUsers(ethers.provider)
+            expect(users).to.have.property(alice.address).which.have.members(['admin', 'employee']);
+            expect(users).to.have.property(bob.address).which.have.members(['employee', 'engineer']);
         })
 
-        it('Should add a rule', async function () {
+        it('Should add a policy', async function () {
             const { shield, alice } = context
             const label = 'everybody'
             const policy = [['admin', 'employee', 'engineer']]
@@ -161,7 +201,7 @@ describe('Shield', function () {
             expect(await shield.getAssignedPolicy(shield.contract, f)).to.deep.equal(policy);
         })
 
-        it('Should add a rule and set an assignment', async function () {
+        it('Should add a policy and set an assignment', async function () {
             const { shield, alice } = context
             const label = 'two-step'
             const policy = [['employee'], ['admin']]
@@ -305,7 +345,7 @@ describe('Shield', function () {
             await expect(
                 shield.addPolicy(
                     alice,
-                    'another-rule',
+                    'another-policy',
                     [['admin']],
                     credentials
                 )
@@ -389,7 +429,7 @@ describe('Shield', function () {
             ).to.be.reverted
         })
 
-        it('Should reject if bad rule', async function () {
+        it('Should reject if bad policy', async function () {
             const { shield, alice } = context
             let label = ''
             const policy = []
@@ -401,7 +441,7 @@ describe('Shield', function () {
             await expect(
                 shield.addPolicy(alice, label, policy, credentials)
             ).to.be.revertedWithCustomError(shield.contract, 'ShieldError')
-            label = 'admin-rule'
+            label = 'admin-policy'
             credentials = await shield.createCredentialsForAddPolicy(
                 alice,
                 label,

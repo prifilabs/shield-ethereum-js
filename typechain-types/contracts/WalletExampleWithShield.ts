@@ -56,18 +56,23 @@ export interface WalletExampleWithShieldInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "withdraw", data: BytesLike): Result;
 
   events: {
-    "IsShieldable(address)": EventFragment;
+    "ShieldableDeployed(address,address)": EventFragment;
   };
 
-  getEvent(nameOrSignatureOrTopic: "IsShieldable"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "ShieldableDeployed"): EventFragment;
 }
 
-export interface IsShieldableEventObject {
-  c: string;
+export interface ShieldableDeployedEventObject {
+  shieldable: string;
+  shield: string;
 }
-export type IsShieldableEvent = TypedEvent<[string], IsShieldableEventObject>;
+export type ShieldableDeployedEvent = TypedEvent<
+  [string, string],
+  ShieldableDeployedEventObject
+>;
 
-export type IsShieldableEventFilter = TypedEventFilter<IsShieldableEvent>;
+export type ShieldableDeployedEventFilter =
+  TypedEventFilter<ShieldableDeployedEvent>;
 
 export interface WalletExampleWithShield extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
@@ -118,8 +123,14 @@ export interface WalletExampleWithShield extends BaseContract {
   };
 
   filters: {
-    "IsShieldable(address)"(c?: null): IsShieldableEventFilter;
-    IsShieldable(c?: null): IsShieldableEventFilter;
+    "ShieldableDeployed(address,address)"(
+      shieldable?: null,
+      shield?: null
+    ): ShieldableDeployedEventFilter;
+    ShieldableDeployed(
+      shieldable?: null,
+      shield?: null
+    ): ShieldableDeployedEventFilter;
   };
 
   estimateGas: {

@@ -1,60 +1,37 @@
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { Provider } from '@ethersproject/abstract-provider';
-import { Signer, Contract, utils, ContractInterface } from 'ethers';
+import { ethers } from 'ethers';
 import { Credentials } from './types';
-export declare function createCredentials(signer: Signer, to: Contract, fragment: string, args: any[]): Promise<Credentials>;
-export declare function approveCredentials(signer: Signer, credentials: Credentials): Promise<Credentials>;
+export declare function createCredentials(signer: ethers.Signer, to: ethers.Contract, fragment: string, args: any[]): Promise<Credentials>;
+export declare function approveCredentials(signer: ethers.Signer, credentials: Credentials): Promise<Credentials>;
 export declare function encodeCredentials(credentials: Credentials): string;
 export declare function decodeCredentials(encodedCredentials: string): Credentials;
-export declare function getAllShieldAddresses(signer: Signer): Promise<void>;
-export declare function createShield(signer: SignerWithAddress, name: string, roles: any[], users: any[], policy: any[], factory?: Contract, iface?: utils.Interface): Promise<Shield>;
-export declare function createShieldInstance(signer: Signer | Provider, address: string, iface?: ContractInterface): Promise<Shield>;
+export declare function getShields(provider: any, address: string, factory?: ethers.Contract): Promise<string[]>;
+export declare function createShield(signer: ethers.Signer, name: string, roles: any[], users: any[], policy: any[], factory?: ethers.Contract, iface?: ethers.utils.Interface): Promise<Shield>;
+export declare function createShieldInstance(signer: ethers.Signer, address: string, iface?: ethers.ContractInterface): Promise<Shield>;
 export declare class Shield {
-    contract: Contract;
-    constructor(contract: Contract);
+    contract: ethers.Contract;
+    constructor(contract: ethers.Contract);
     getRoles(): Promise<any>;
-    createCredentialsForAddRoles(signer: Signer, roles: string[]): Promise<Credentials>;
-    addRoles(signer: string | Signer | Provider, roles: string[], credentials: any): Promise<any>;
-    getUsers(): Promise<void>;
+    createCredentialsForAddRoles(signer: ethers.Signer, roles: string[]): Promise<Credentials>;
+    addRoles(signer: ethers.Signer, roles: string[], credentials: Credentials): Promise<any>;
+    getUsers(provider: any): Promise<{}>;
     getUser(address: any): Promise<string[]>;
-    createCredentialsForSetUser(signer: Signer, address: any, roles: string[]): Promise<Credentials>;
-    setUser(signer: string | Signer | Provider, address: any, roles: string[], credentials: any): Promise<any>;
-    getPolicys(): Promise<void>;
+    createCredentialsForSetUser(signer: ethers.Signer, address: any, roles: string[]): Promise<Credentials>;
+    setUser(signer: ethers.Signer, address: any, roles: string[], credentials: Credentials): Promise<any>;
+    getPolicies(provider: any): Promise<{}>;
     getPolicy(label: string): Promise<any>;
-    createCredentialsForAddPolicy(signer: Signer, label: string, policy: any[]): Promise<Credentials>;
-    addPolicy(signer: string | Signer | Provider, label: string, policy: any[], credentials: any): Promise<any>;
-    getAssignedPolicies(): Promise<void>;
-    getAssignedPolicy(to: {
-        interface: {
-            getSighash: (arg0: any) => any;
-        };
-        address: any;
-    }, f: any): Promise<any>;
-    createCredentialsForAssignPolicy(signer: Signer, to: {
-        interface: {
-            getSighash: (arg0: any) => any;
-        };
-        address: any;
-    }, f: any, label: string): Promise<Credentials>;
-    assignPolicy(signer: string | Signer | Provider, to: {
-        interface: {
-            getSighash: (arg0: any) => any;
-        };
-        address: any;
-    }, f: any, label: string, credentials: any): Promise<any>;
+    createCredentialsForAddPolicy(signer: ethers.Signer, label: string, policy: any[]): Promise<Credentials>;
+    addPolicy(signer: ethers.Signer, label: string, policy: any[], credentials: Credentials): Promise<any>;
+    getAssignedPolicies(provider: any): Promise<{}>;
+    getAssignedPolicy(to: ethers.Contract, f: string): Promise<any>;
+    createCredentialsForAssignPolicy(signer: ethers.Signer, to: ethers.Contract, f: string, label: string): Promise<Credentials>;
+    assignPolicy(signer: ethers.Signer, to: ethers.Contract, f: string, label: string, credentials: Credentials): Promise<any>;
     isPaused(): Promise<any>;
-    createCredentialsForPause(signer: Signer): Promise<Credentials>;
-    pause(signer: string | Signer | Provider, credentials: any): Promise<any>;
-    createCredentialsForUnpause(signer: Signer): Promise<Credentials>;
-    unpause(signer: string | Signer | Provider, credentials: any): Promise<any>;
-    createCredentialsForTransfer(signer: Signer, to: string, amount: number): Promise<Credentials>;
-    transfer(signer: string | Signer | Provider, to: string, amount: number, credentials: any): Promise<any>;
-    burnCredentials(signer: string | Signer | Provider, credentials: any): Promise<any>;
-    validateCredentials(credentials: {
-        to: any;
-        call: string | any[];
-        timestamp: any;
-        approvals: string[];
-        signer: any;
-    }, full: boolean): Promise<string[]>;
+    createCredentialsForPause(signer: ethers.Signer): Promise<Credentials>;
+    pause(signer: ethers.Signer, credentials: Credentials): Promise<any>;
+    createCredentialsForUnpause(signer: ethers.Signer): Promise<Credentials>;
+    unpause(signer: ethers.Signer, credentials: Credentials): Promise<any>;
+    createCredentialsForTransfer(signer: ethers.Signer, to: string, amount: number): Promise<Credentials>;
+    transfer(signer: ethers.Signer, to: string, amount: number, credentials: Credentials): Promise<any>;
+    burnCredentials(signer: ethers.Signer, credentials: Credentials): Promise<any>;
+    validateCredentials(credentials: Credentials, full: boolean): Promise<string[]>;
 }
