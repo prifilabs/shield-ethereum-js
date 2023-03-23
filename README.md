@@ -1,22 +1,43 @@
-# Sample Hardhat Project
+# The Shield
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
+The version 0.1 of the Shield is totally **unsecured**. It is still work in progress. 
 
-Try running some of the following tasks:
+## API
 
-```shell
-npx hardhat help
-npx hardhat test
-npx hardhat coverage
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.ts
-```
+### Core functions
 
-# Upload npm package
+- `getDefaultFactory(signer: ethers.Signer, network: string): Promise<ethers.Contract>`: returns the Shield Factory contract deployed on `network`
+- `createCredentials(signer: ethers.Signer, to: ethers.Contract, func: string, args: any[]): Promise<Credentials>`
+- `approveCredentials(signer: ethers.Signer, credentials: Credentials): Promise<Credentials>`    
+- `encodeCredentials(credentials: Credentials): string`
+- `decodeCredentials(encodedCredentials: string): Credential`
+- `createShield(signer: ethers.Signer, name: string, roles: any[], users: any[], policy: any[], factory: ethers.Contract): Promise<Shield>`
+- `instantiateShield(signer: ethers.Signer, address: string): Promise<Shield>`
+- `getShields(provider, address: string, factory: ethers.Contract): Promise<string[]>`    
+    
+### Methods of the `Shield` object
 
-```shell
-npm login
-npm publish
-npm publish --access public
-```
+- `getRoles(): Promise<string[]>`
+- `createCredentialsForAddRoles(signer: ethers.Signer, roles: string[]): Promise<Credentials>`
+- `addRoles(signer: ethers.Signer, roles: string[], credentials: Credentials)`
+- `getUsers(provider): Promise<{[address: string]: string[]}>`
+- `getUser(address: string): Promise<string[]>`
+- `createCredentialsForSetUser(signer: ethers.Signer, address: any, roles: string[]): Promise<Credentials>`
+- `setUser(signer: ethers.Signer, address: any, roles: string[], credentials: Credentials)`
+- `getPolicies(provider): Promise<{[label: string]: string[][]}>`
+- `getPolicy(label: string): Promise<string[][]>`
+- `createCredentialsForAddPolicy(signer: ethers.Signer, label: string, policy: string[][]): Promise<Credentials>`
+- `addPolicy(signer: ethers.Signer, label: string, policy: string[][], credentials: Credentials)`
+- `getAssignedPolicies(provider): Promise<{[address: string]: {[func: string]: string}}>`
+- `getAssignedPolicy(to: address, func: string): Promise<string>`
+- `createCredentialsForAssignPolicy(signer: ethers.Signer, to: address, func: string, label: string)`
+- `assignPolicy(signer: ethers.Signer, to: address, func: string, label: string, credentials: Credentials)`
+- `isPaused(): Promise<boolean>`
+- `createCredentialsForPause(signer: ethers.Signer): Promise<Credentials>`
+- `pause(signer: ethers.Signer, credentials: Credentials)`
+- `createCredentialsForUnpause(signer: ethers.Signer)`
+- `unpause(signer: ethers.Signer, credentials: Credentials)`
+- `createCredentialsForTransfer(signer: ethers.Signer, to: string, amount: number): Promise<Credentials>`
+- `transfer(signer: ethers.Signer, to: string, amount: number, credentials: Credentials)`
+- `burnCredentials(signer: ethers.Signer, credentials: Credentials)`
+- `checkCredentials(credentials: Credentials, full?: boolean):Promise<{to: string, func: string, args:any[], timestamp:number, approvals: string[]}>`

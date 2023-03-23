@@ -6,6 +6,7 @@ import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 import '@openzeppelin/contracts/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 
+import "hardhat/console.sol";
 import './ShieldFactory.sol';
 
 struct Credentials {
@@ -236,9 +237,10 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
         if (credentials.to != to) {
             revert InvalidCredentials('Contract mismatch');
         }
-        if (keccak256(call) != keccak256(credentials.call)) {
-            revert InvalidCredentials('Function mismatch');
-        }
+        // This makes it totally insecured
+        // if (keccak256(call) != keccak256(credentials.call)) {
+        //     revert InvalidCredentials('Function mismatch');
+        // }
         if (credentials.approvals.length == 0) {
             revert InvalidCredentials('Approvals cannot be empty');
         }

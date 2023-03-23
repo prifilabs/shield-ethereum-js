@@ -1,12 +1,13 @@
 import { ethers } from 'ethers';
 import { Credentials } from './types';
+export declare function getDefaultFactory(signer: ethers.Signer, network: string): Promise<ethers.Contract>;
 export declare function createCredentials(signer: ethers.Signer, to: ethers.Contract, fragment: string, args: any[]): Promise<Credentials>;
 export declare function approveCredentials(signer: ethers.Signer, credentials: Credentials): Promise<Credentials>;
 export declare function encodeCredentials(credentials: Credentials): string;
 export declare function decodeCredentials(encodedCredentials: string): Credentials;
 export declare function getShields(provider: any, address: string, factory?: ethers.Contract): Promise<string[]>;
-export declare function createShield(signer: ethers.Signer, name: string, roles: any[], users: any[], policy: any[], factory?: ethers.Contract, iface?: ethers.utils.Interface): Promise<Shield>;
-export declare function createShieldInstance(signer: ethers.Signer, address: string, iface?: ethers.ContractInterface): Promise<Shield>;
+export declare function createShield(signer: ethers.Signer, name: string, roles: any[], users: any[], policy: any[], factory?: ethers.Contract): Promise<Shield>;
+export declare function createShieldInstance(signer: ethers.Signer, address: string): Promise<Shield>;
 export declare class Shield {
     contract: ethers.Contract;
     constructor(contract: ethers.Contract);

@@ -27,9 +27,6 @@ describe('Wallet Example', function () {
             const { factory, alice, bob } = await loadFixture(
                 deployFactoryFixture
             )
-            const ShieldContractFactory = await ethers.getContractFactory(
-                'Shield'
-            )
             const name = 'MyShield'
             const roles = ['employee', 'admin']
             const users = [
@@ -43,8 +40,7 @@ describe('Wallet Example', function () {
                 roles,
                 users,
                 policy,
-                factory,
-                ShieldContractFactory.interface
+                factory            
             )
             context = { shield, alice, bob }
         })
@@ -59,6 +55,7 @@ describe('Wallet Example', function () {
                 shield.contract.address,
                 { value: balance }
             )
+            shield.addInterface(wallet.address, wallet.interface);
             context = { ...context, wallet }
         })
 
@@ -91,11 +88,11 @@ describe('Wallet Example', function () {
             const f = 'withdraw'
             const credentials2 = await shield.createCredentialsForAssignPolicy(
                 alice,
-                wallet,
+                wallet.address,
                 f,
                 label
             )
-            await shield.assignPolicy(alice, wallet, f, label, credentials2)
+            await shield.assignPolicy(alice, wallet.address, f, label, credentials2)
 
             context = { ...context, wallet }
         })
@@ -124,11 +121,11 @@ describe('Wallet Example', function () {
             const f = 'withdraw'
             const credentials2 = await shield.createCredentialsForAssignPolicy(
                 alice,
-                wallet,
+                wallet.address,
                 f,
                 label
             )
-            await shield.assignPolicy(alice, wallet, f, label, credentials2)
+            await shield.assignPolicy(alice, wallet.address, f, label, credentials2)
             const credentials3 = await createCredentials(
                 bob,
                 wallet,
@@ -140,7 +137,7 @@ describe('Wallet Example', function () {
         })
     })
 
-    describe('Withdraw without Shield', function () {
+    describe('Without Shield', function () {
         it('Should allow to withdraw', async function () {
             const [alice] = await ethers.getSigners()
             const Wallet = await ethers.getContractFactory(
