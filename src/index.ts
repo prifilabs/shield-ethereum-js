@@ -100,7 +100,9 @@ export async function getShields(
     const shields = new Set<string>()
     events.forEach(function (event) {
         const [shield, user] = event.args
-        shields.add(shield)
+        if (user === address) {
+            shields.add(shield)
+        }
     })
     return Array.from(shields)
 }
