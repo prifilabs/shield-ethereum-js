@@ -2,29 +2,37 @@ import { ethers } from 'ethers'
 import { getBytesFromRoles, parseEvents, getRolesFromBytes } from './utils'
 import { Credentials } from './types'
 
-import CONFIG from "./config.json";
-import SHIELD from "../artifacts/contracts/Shield.sol/Shield.json";
-import FACTORY from "../artifacts/contracts/Shield.sol/Shield.json";
+import CONFIG from './config.json'
+import SHIELD from '../artifacts/contracts/Shield.sol/Shield.json'
+import FACTORY from '../artifacts/contracts/Shield.sol/Shield.json'
 
-const SHIELD_INTERFACE = new ethers.utils.Interface(SHIELD.abi);
+const SHIELD_INTERFACE = new ethers.utils.Interface(SHIELD.abi)
 
 function signData(signer: ethers.Signer, types: string[], values: any[]) {
     let message = ethers.utils.arrayify(
-        ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(types, values))
+        ethers.utils.keccak256(
+            ethers.utils.defaultAbiCoder.encode(types, values)
+        )
     )
     return signer.signMessage(message)
 }
 
 function getSigner(types: string[], values: any[], signature: string) {
     let message = ethers.utils.arrayify(
-        ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(types, values))
+        ethers.utils.keccak256(
+            ethers.utils.defaultAbiCoder.encode(types, values)
+        )
     )
     return ethers.utils.verifyMessage(message, signature)
 }
 
-export async function getDefaultFactory(signer: ethers.Signer, network: string): Promise<ethers.Contract>{
-    if (!(network in CONFIG)) throw new Error(`Shield Factory not deployed on ${network}`);
-    return new ethers.Contract( CONFIG[network] , FACTORY.abi , signer );
+export async function getDefaultFactory(
+    signer: ethers.Signer,
+    network: string
+): Promise<ethers.Contract> {
+    if (!(network in CONFIG))
+        throw new Error(`Shield Factory not deployed on ${network}`)
+    return new ethers.Contract(CONFIG[network], FACTORY.abi, signer)
 }
 
 export async function createCredentials(
@@ -39,10 +47,7 @@ export async function createCredentials(
         timestamp: 0,
         approvals: [],
     }
-    let call = to.interface.encodeFunctionData(func, [
-        ...args,
-        nullCredential,
-    ])
+    let call = to.interface.encodeFunctionData(func, [...args, nullCredential])
     // types = types.slice(0, -1)
     // const len = ethers.utils.defaultAbiCoder.encode(types, args).length
     // call = call.slice(0, len + 8)
@@ -80,16 +85,24 @@ export function decodeCredentials(encodedCredentials: string): Credentials {
     return { to, call, timestamp, approvals: approvals.map(atob) }
 }
 
-export async function getShields(provider, address: string, factory: ethers.Contract): Promise<string[]> {
+export async function getShields(
+    provider,
+    address: string,
+    factory: ethers.Contract
+): Promise<string[]> {
     const currentBlock = await provider.getBlockNumber()
     const firstBlock = factory.deployTransaction.blockNumber
-    let events = await factory.queryFilter('UserAdded', firstBlock, currentBlock)
-    const shields = new Set<string>();
-    events.forEach(function(event){
-        const [shield, user] = event.args;
-        shields.add(shield);
-    });
-    return Array.from(shields);
+    let events = await factory.queryFilter(
+        'UserAdded',
+        firstBlock,
+        currentBlock
+    )
+    const shields = new Set<string>()
+    events.forEach(function (event) {
+        const [shield, user] = event.args
+        shields.add(shield)
+    })
+    return Array.from(shields)
 }
 
 export async function createShield(
@@ -99,7 +112,7 @@ export async function createShield(
     users: any[],
     policy: any[],
     factory: ethers.Contract
-):Promise<Shield> {
+): Promise<Shield> {
     const _name = ethers.utils.formatBytes32String(name)
     const _roles = roles.map(ethers.utils.formatBytes32String)
     const _users = users.map(function (user: { roles: string[]; addr: any }) {
@@ -123,23 +136,23 @@ export async function createShield(
 export async function instantiateShield(
     signer: ethers.Signer,
     address: string
-):Promise<Shield> {
+): Promise<Shield> {
     let contract = new ethers.Contract(address, SHIELD_INTERFACE, signer)
     return new Shield(contract)
 }
 
 export class Shield {
     public contract: ethers.Contract
-    public abis: {[address: string]: ethers.utils.Interface};
+    public abis: { [address: string]: ethers.utils.Interface }
 
     constructor(contract: ethers.Contract) {
         this.contract = contract
-        this.abis = {};
-        this.abis[contract.address] = contract.interface;
+        this.abis = {}
+        this.abis[contract.address] = contract.interface
     }
 
-    addInterface(address: string, iface: ethers.utils.Interface){
-        this.abis[address] = iface;
+    addInterface(address: string, iface: ethers.utils.Interface) {
+        this.abis[address] = iface
     }
 
     async getRoles(): Promise<string[]> {
@@ -147,7 +160,10 @@ export class Shield {
         return roles.map(ethers.utils.parseBytes32String)
     }
 
-    async createCredentialsForAddRoles(signer: ethers.Signer, roles: string[]): Promise<Credentials> {
+    async createCredentialsForAddRoles(
+        signer: ethers.Signer,
+        roles: string[]
+    ): Promise<Credentials> {
         const newRoles = roles.map(ethers.utils.formatBytes32String)
         return createCredentials(signer, this.contract, 'addRoles', [newRoles])
     }
@@ -161,23 +177,31 @@ export class Shield {
         return this.contract.connect(signer).addRoles(newRoles, credentials)
     }
 
-    async getUsers(provider): Promise<{[address: string]: string[]}> {
+    async getUsers(provider): Promise<{ [address: string]: string[] }> {
         const currentBlock = await provider.getBlockNumber()
         const firstBlock = (await this.contract.born()).toNumber()
-        let events = await this.contract.queryFilter('UserSet', firstBlock, currentBlock)
+        let events = await this.contract.queryFilter(
+            'UserSet',
+            firstBlock,
+            currentBlock
+        )
         const roles = await this.contract.getRoles()
-        const users = {};
-        for (let event of events){
-            const [user, bits] = event.args;
-            users[user] = getRolesFromBytes(bits, roles).map(ethers.utils.parseBytes32String)
+        const users = {}
+        for (let event of events) {
+            const [user, bits] = event.args
+            users[user] = getRolesFromBytes(bits, roles).map(
+                ethers.utils.parseBytes32String
+            )
         }
-        return users;
+        return users
     }
 
     async getUser(address: string): Promise<string[]> {
         const roles = await this.contract.getRoles()
         const bits = await this.contract.getUser(address)
-        return getRolesFromBytes(bits, roles).map(ethers.utils.parseBytes32String)
+        return getRolesFromBytes(bits, roles).map(
+            ethers.utils.parseBytes32String
+        )
     }
 
     async createCredentialsForSetUser(
@@ -212,21 +236,27 @@ export class Shield {
             .setUser(address, newRoles, credentials)
     }
 
-    async getPolicies(provider): Promise<{[label: string]: string[][]}> {
+    async getPolicies(provider): Promise<{ [label: string]: string[][] }> {
         const currentBlock = await provider.getBlockNumber()
         const firstBlock = (await this.contract.born()).toNumber()
-        let events = await this.contract.queryFilter('PolicyAdded', firstBlock, currentBlock)
+        let events = await this.contract.queryFilter(
+            'PolicyAdded',
+            firstBlock,
+            currentBlock
+        )
         const roles = await this.contract.getRoles()
-        const policies = {};
-        for(let event of events){
-            const [label, policy] = event.args;
-            const decodedLabel = ethers.utils.parseBytes32String(label);
+        const policies = {}
+        for (let event of events) {
+            const [label, policy] = event.args
+            const decodedLabel = ethers.utils.parseBytes32String(label)
             const decodedPolicy = policy.map(function (bits: any) {
-                                return getRolesFromBytes(bits, roles).map(ethers.utils.parseBytes32String)
-                            });
-            policies[decodedLabel] = decodedPolicy;
+                return getRolesFromBytes(bits, roles).map(
+                    ethers.utils.parseBytes32String
+                )
+            })
+            policies[decodedLabel] = decodedPolicy
         }
-        return policies;
+        return policies
     }
 
     async getPolicy(label: string): Promise<string[][]> {
@@ -235,7 +265,9 @@ export class Shield {
             ethers.utils.formatBytes32String(label)
         )
         return policy.map(function (bits: any) {
-            return getRolesFromBytes(bits, roles).map(ethers.utils.parseBytes32String)
+            return getRolesFromBytes(bits, roles).map(
+                ethers.utils.parseBytes32String
+            )
         })
     }
 
@@ -247,7 +279,10 @@ export class Shield {
         const roles = await this.contract.getRoles()
         const newLabel = ethers.utils.formatBytes32String(label)
         const newPolicy = policy.map(function (step: string[]) {
-            return getBytesFromRoles(step.map(ethers.utils.formatBytes32String), roles)
+            return getBytesFromRoles(
+                step.map(ethers.utils.formatBytes32String),
+                roles
+            )
         })
         return createCredentials(signer, this.contract, 'addPolicy', [
             newLabel,
@@ -264,50 +299,63 @@ export class Shield {
         const roles = await this.contract.getRoles()
         const newLabel = ethers.utils.formatBytes32String(label)
         const newPolicy = policy.map(function (step: string[]) {
-            return getBytesFromRoles(step.map(ethers.utils.formatBytes32String), roles)
+            return getBytesFromRoles(
+                step.map(ethers.utils.formatBytes32String),
+                roles
+            )
         })
         return this.contract
             .connect(signer)
             .addPolicy(newLabel, newPolicy, credentials)
     }
-    
-    async getAssignedPolicies(provider): Promise<{[address: string]: {[func: string]: string}}> {
+
+    async getAssignedPolicies(
+        provider
+    ): Promise<{ [address: string]: { [func: string]: string } }> {
         const currentBlock = await provider.getBlockNumber()
         const firstBlock = (await this.contract.born()).toNumber()
-        let events = await this.contract.queryFilter('PolicyAssigned', firstBlock, currentBlock)
-        const assignments = {};
-        for(let event of events){
-            const [to, sig, label] = event.args;
-            if (!(to in assignments)){
-                assignments[to] = {};
+        let events = await this.contract.queryFilter(
+            'PolicyAssigned',
+            firstBlock,
+            currentBlock
+        )
+        const assignments = {}
+        for (let event of events) {
+            const [to, sig, label] = event.args
+            if (!(to in assignments)) {
+                assignments[to] = {}
             }
-            const decodedLabel = ethers.utils.parseBytes32String(label);
-            const f = (to in this.abis)? this.abis[to].getFunction(sig).name : sig;
-            assignments[to][f] = decodedLabel;
+            const decodedLabel = ethers.utils.parseBytes32String(label)
+            const f =
+                to in this.abis ? this.abis[to].getFunction(sig).name : sig
+            assignments[to][f] = decodedLabel
         }
-        return assignments;
+        return assignments
     }
 
-    async getAssignedPolicy(
-        to: string,
-        func: string
-    ): Promise<string> {
-        if (!(to in this.abis)) { throw new Error(`unknown abi for ${to}`) }
+    async getAssignedPolicy(to: string, func: string): Promise<string> {
+        if (!(to in this.abis)) {
+            throw new Error(`unknown abi for ${to}`)
+        }
         const roles = await this.contract.getRoles()
         let sig = this.abis[to].getSighash(func)
         const policy = await this.contract.getAssignedPolicy(to, sig)
         return policy.map(function (bits: any) {
-            return getRolesFromBytes(bits, roles).map(ethers.utils.parseBytes32String)
+            return getRolesFromBytes(bits, roles).map(
+                ethers.utils.parseBytes32String
+            )
         })
     }
 
     async createCredentialsForAssignPolicy(
         signer: ethers.Signer,
-        to: address,
+        to: string,
         func: string,
         label: string
     ) {
-        if (!(to in this.abis)) { throw new Error(`unknown abi for ${to}`) }
+        if (!(to in this.abis)) {
+            throw new Error(`unknown abi for ${to}`)
+        }
         const sig = this.abis[to].getSighash(func)
         const newLabel = ethers.utils.formatBytes32String(label)
         return createCredentials(signer, this.contract, 'assignPolicy', [
@@ -324,7 +372,9 @@ export class Shield {
         label: string,
         credentials: Credentials
     ) {
-        if (!(to in this.abis)) { throw new Error(`unknown abi for ${to}`) }
+        if (!(to in this.abis)) {
+            throw new Error(`unknown abi for ${to}`)
+        }
         const sig = this.abis[to].getSighash(func)
         const newLabel = ethers.utils.formatBytes32String(label)
         return this.contract
@@ -336,7 +386,9 @@ export class Shield {
         return this.contract.paused()
     }
 
-    async createCredentialsForPause(signer: ethers.Signer): Promise<Credentials> {
+    async createCredentialsForPause(
+        signer: ethers.Signer
+    ): Promise<Credentials> {
         return createCredentials(signer, this.contract, 'pause', [])
     }
 
@@ -344,19 +396,33 @@ export class Shield {
         return this.contract.connect(signer).pause(credentials)
     }
 
-    async createCredentialsForUnpause(signer: ethers.Signer): Promise<Credentials> {
+    async createCredentialsForUnpause(
+        signer: ethers.Signer
+    ): Promise<Credentials> {
         return createCredentials(signer, this.contract, 'unpause', [])
     }
 
     async unpause(signer: ethers.Signer, credentials: Credentials) {
         return this.contract.connect(signer).unpause(credentials)
     }
-    
-    async createCredentialsForTransfer(signer: ethers.Signer, to: string, amount: number): Promise<Credentials> {
-        return createCredentials(signer, this.contract, 'transfer', [to, amount])
+
+    async createCredentialsForTransfer(
+        signer: ethers.Signer,
+        to: string,
+        amount: number
+    ): Promise<Credentials> {
+        return createCredentials(signer, this.contract, 'transfer', [
+            to,
+            amount,
+        ])
     }
 
-    async transfer(signer: ethers.Signer, to: string, amount: number, credentials: Credentials) {
+    async transfer(
+        signer: ethers.Signer,
+        to: string,
+        amount: number,
+        credentials: Credentials
+    ) {
         return this.contract.connect(signer).transfer(to, amount, credentials)
     }
 
@@ -364,14 +430,23 @@ export class Shield {
         return this.contract.connect(signer).burnCredentials(credentials)
     }
 
-    async checkCredentials(credentials: Credentials, full?: boolean):Promise<{to: string, func: string, args:any[], timestamp:number, approvals: string[]}> {
-        full = (typeof full === 'undefined')? false : full;
+    async checkCredentials(
+        credentials: Credentials,
+        full?: boolean
+    ): Promise<{
+        to: string
+        func: string
+        args: any[]
+        timestamp: number
+        approvals: string[]
+    }> {
+        full = typeof full === 'undefined' ? false : full
         const signer = await getSigner(
             ['address', 'bytes', 'uint'],
             [credentials.to, credentials.call, credentials.timestamp],
             credentials.approvals[0]
-        );
-        let sig = credentials.call.slice(0, 10);
+        )
+        let sig = credentials.call.slice(0, 10)
         const signers = await this.contract.validateCredentials(
             credentials,
             signer,
@@ -379,16 +454,25 @@ export class Shield {
             sig,
             credentials.call,
             full
-        );
-        let func, args;
-        if(credentials.to in this.abis){
-            func = this.abis[credentials.to].getFunction(sig).name;
-            args = this.abis[credentials.to].decodeFunctionData(sig, credentials.call);
-            args = args.slice(0, -1);
-        }else{
-            func = sig;
-            args = [credentials.call.slice(10)];
+        )
+        let func, args
+        if (credentials.to in this.abis) {
+            func = this.abis[credentials.to].getFunction(sig).name
+            args = this.abis[credentials.to].decodeFunctionData(
+                sig,
+                credentials.call
+            )
+            args = args.slice(0, -1)
+        } else {
+            func = sig
+            args = [credentials.call.slice(10)]
         }
-        return { to:credentials.to, func, args, timestamp: credentials.timestamp, approvals: signers };
+        return {
+            to: credentials.to,
+            func,
+            args,
+            timestamp: credentials.timestamp,
+            approvals: signers,
+        }
     }
 }

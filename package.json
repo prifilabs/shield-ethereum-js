@@ -1,6 +1,6 @@
 {
     "name": "@prifilabs/shield-ethereum-js",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "The Shield - customizable smart contract protection",
     "main": "lib/index.js",
     "scripts": {
