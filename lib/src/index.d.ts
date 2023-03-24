@@ -5,7 +5,8 @@ export declare function createCredentials(signer: ethers.Signer, to: ethers.Cont
 export declare function approveCredentials(signer: ethers.Signer, credentials: Credentials): Promise<Credentials>;
 export declare function encodeCredentials(credentials: Credentials): string;
 export declare function decodeCredentials(encodedCredentials: string): Credentials;
-export declare function getShields(provider: any, address: string, factory: ethers.Contract): Promise<string[]>;
+export declare function getShieldName(address: string, factory: ethers.Contract): Promise<string>;
+export declare function getShields(address: string, factory: ethers.Contract): Promise<string[]>;
 export declare function createShield(signer: ethers.Signer, name: string, roles: any[], users: any[], policy: any[], factory: ethers.Contract): Promise<{
     tx: ethers.Transaction;
     shield: Shield;
@@ -21,19 +22,19 @@ export declare class Shield {
     getRoles(): Promise<string[]>;
     createCredentialsForAddRoles(signer: ethers.Signer, roles: string[]): Promise<Credentials>;
     addRoles(signer: ethers.Signer, roles: string[], credentials: Credentials): Promise<ethers.Transaction>;
-    getUsers(provider: any): Promise<{
+    getUsers(): Promise<{
         [address: string]: string[];
     }>;
     getUser(address: string): Promise<string[]>;
     createCredentialsForSetUser(signer: ethers.Signer, address: any, roles: string[]): Promise<Credentials>;
     setUser(signer: ethers.Signer, address: any, roles: string[], credentials: Credentials): Promise<ethers.Transaction>;
-    getPolicies(provider: any): Promise<{
+    getPolicies(): Promise<{
         [label: string]: string[][];
     }>;
     getPolicy(label: string): Promise<string[][]>;
     createCredentialsForAddPolicy(signer: ethers.Signer, label: string, policy: string[][]): Promise<Credentials>;
     addPolicy(signer: ethers.Signer, label: string, policy: string[][], credentials: Credentials): Promise<ethers.Transaction>;
-    getAssignedPolicies(provider: any): Promise<{
+    getAssignedPolicies(): Promise<{
         [address: string]: {
             [func: string]: string;
         };

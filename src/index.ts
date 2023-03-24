@@ -1,10 +1,13 @@
 import { ethers } from 'ethers'
 import { getBytesFromRoles, getRolesFromBytes } from './utils'
 import { Credentials } from './types'
+import AsyncLock from 'async-lock'
+
+const lock = new AsyncLock()
 
 import CONFIG from './config.json'
 import SHIELD from '../artifacts/contracts/Shield.sol/Shield.json'
-import FACTORY from '../artifacts/contracts/Shield.sol/Shield.json'
+import FACTORY from '../artifacts/contracts/ShieldFactory.sol/ShieldFactory.json'
 
 const SHIELD_INTERFACE = new ethers.utils.Interface(SHIELD.abi)
 
@@ -85,18 +88,43 @@ export function decodeCredentials(encodedCredentials: string): Credentials {
     return { to, call, timestamp, approvals: approvals.map(atob) }
 }
 
+let cache = {}
+
+export async function getShieldName(
+    address: string,
+    factory: ethers.Contract
+): Promise<string> {
+    return lock.acquire('getShieldName', async function () {
+        if (factory.address in cache) {
+            if (address in cache[factory.address].data) {
+                return cache[factory.address].data[address]
+            }
+        } else {
+            cache[factory.address] = {
+                lastblock: factory.deployTransaction.blockNumber,
+                data: {},
+            }
+        }
+        let events = await factory.queryFilter(
+            'ShieldCreated',
+            cache[factory.address].lastBlock + 1,
+            'latest'
+        )
+        for (let event of events) {
+            const [_, address, name] = event.args
+            cache[factory.address].data[address] =
+                ethers.utils.parseBytes32String(name)
+        }
+        return cache[factory.address].data[address]
+    })
+}
+
 export async function getShields(
-    provider,
     address: string,
     factory: ethers.Contract
 ): Promise<string[]> {
-    const currentBlock = await provider.getBlockNumber()
     const firstBlock = factory.deployTransaction.blockNumber
-    let events = await factory.queryFilter(
-        'UserAdded',
-        firstBlock,
-        currentBlock
-    )
+    let events = await factory.queryFilter('UserAdded', firstBlock, 'latest')
     const shields = new Set<string>()
     events.forEach(function (event) {
         const [shield, user] = event.args
@@ -183,13 +211,12 @@ export class Shield {
         return this.contract.connect(signer).addRoles(newRoles, credentials)
     }
 
-    async getUsers(provider): Promise<{ [address: string]: string[] }> {
-        const currentBlock = await provider.getBlockNumber()
+    async getUsers(): Promise<{ [address: string]: string[] }> {
         const firstBlock = (await this.contract.born()).toNumber()
         let events = await this.contract.queryFilter(
             'UserSet',
             firstBlock,
-            currentBlock
+            'latest'
         )
         const roles = await this.contract.getRoles()
         const users = {}
@@ -242,13 +269,12 @@ export class Shield {
             .setUser(address, newRoles, credentials)
     }
 
-    async getPolicies(provider): Promise<{ [label: string]: string[][] }> {
-        const currentBlock = await provider.getBlockNumber()
+    async getPolicies(): Promise<{ [label: string]: string[][] }> {
         const firstBlock = (await this.contract.born()).toNumber()
         let events = await this.contract.queryFilter(
             'PolicyAdded',
             firstBlock,
-            currentBlock
+            'latest'
         )
         const roles = await this.contract.getRoles()
         const policies = {}
@@ -315,15 +341,14 @@ export class Shield {
             .addPolicy(newLabel, newPolicy, credentials)
     }
 
-    async getAssignedPolicies(
-        provider
-    ): Promise<{ [address: string]: { [func: string]: string } }> {
-        const currentBlock = await provider.getBlockNumber()
+    async getAssignedPolicies(): Promise<{
+        [address: string]: { [func: string]: string }
+    }> {
         const firstBlock = (await this.contract.born()).toNumber()
         let events = await this.contract.queryFilter(
             'PolicyAssigned',
             firstBlock,
-            currentBlock
+            'latest'
         )
         const assignments = {}
         for (let event of events) {

@@ -13,7 +13,8 @@ The version 0.1 of the Shield is totally **unsecured**. It is still work in prog
 -   `decodeCredentials(encodedCredentials: string): Credential` returns the decoded credentials of the base-64 encoded string
 -   `createShield(signer: ethers.Signer, name: string, roles: any[], users: any[], policy: any[], factory: ethers.Contract): Promise<{receipt: ethers.Transaction, shield: Shield}>`: deploys a shield and returns the corresponding shield object (see below)
 -   `instantiateShield(signer: ethers.Signer, address: string): Promise<Shield>`: returns a shield object (see below) of an existing deployed shield at `address`
--   `getShields(provider, address: string, factory: ethers.Contract): Promise<string[]>`: returns the list of shield's addresses for which the user `address` is one of the users
+-   `getShields(address: string, factory: ethers.Contract): Promise<string[]>`: returns the list of shield's addresses for which the user `address` is one of the users
+-   `function getShieldName(address: string, factory: ethers.Contract): Promise<string>`: returns the name of a Shield
 
 ### Methods of the `Shield` object
 
@@ -21,15 +22,15 @@ The version 0.1 of the Shield is totally **unsecured**. It is still work in prog
 -   `addInterface(address: string, iface: ethers.utils.Interface)`
 -   `createCredentialsForAddRoles(signer: ethers.Signer, roles: string[]): Promise<Credentials>`
 -   `addRoles(signer: ethers.Signer, roles: string[], credentials: Credentials): Promise<ethers.Transaction>`
--   `getUsers(provider): Promise<{[address: string]: string[]}>`
+-   `getUsers(): Promise<{[address: string]: string[]}>`
 -   `getUser(address: string): Promise<string[]>`
 -   `createCredentialsForSetUser(signer: ethers.Signer, address: any, roles: string[]): Promise<Credentials>`
 -   `setUser(signer: ethers.Signer, address: any, roles: string[], credentials: Credentials): Promise<ethers.Transaction>`
--   `getPolicies(provider): Promise<{[label: string]: string[][]}>`
+-   `getPolicies(): Promise<{[label: string]: string[][]}>`
 -   `getPolicy(label: string): Promise<string[][]>`
 -   `createCredentialsForAddPolicy(signer: ethers.Signer, label: string, policy: string[][]): Promise<Credentials>`
 -   `addPolicy(signer: ethers.Signer, label: string, policy: string[][], credentials: Credentials): Promise<ethers.Transaction>`
--   `getAssignedPolicies(provider): Promise<{[address: string]: {[func: string]: string}}>`
+-   `getAssignedPolicies(): Promise<{[address: string]: {[func: string]: string}}>`
 -   `getAssignedPolicy(to: string, func: string): Promise<string>`
 -   `createCredentialsForAssignPolicy(signer: ethers.Signer, to: address, func: string, label: string)`
 -   `assignPolicy(signer: ethers.Signer, to: address, func: string, label: string, credentials: Credentials): Promise<ethers.Transaction>`

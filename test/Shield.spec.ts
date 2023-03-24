@@ -10,7 +10,11 @@ import {
     createCredentials,
     approveCredentials,
     getShields,
+    getShieldName,
+    getDefaultFactory,
 } from '../src/index'
+
+import CONFIG from '../src/config.json'
 
 describe('Shield', function () {
     async function deployFactoryFixture() {
@@ -48,11 +52,27 @@ describe('Shield', function () {
             context = { factory, shield, badShield, alice, bob }
         })
 
+        it('Should get the deployed factories', async function () {
+            const { alice } = context
+            const sepoliaFactory = await getDefaultFactory(alice, 'sepolia')
+            expect(sepoliaFactory.address).to.equal(CONFIG.sepolia)
+            const goerliFactory = await getDefaultFactory(alice, 'goerli')
+            expect(goerliFactory.address).to.equal(CONFIG.goerli)
+        })
+
+        it('Should get the names of the deployed shield', async function () {
+            const { factory, shield, badShield } = context
+            expect(
+                await getShieldName(shield.contract.address, factory)
+            ).to.equal('MyShield')
+            expect(
+                await getShieldName(badShield.contract.address, factory)
+            ).to.equal('BadShield')
+        })
+
         it('Should get all deployed shields', async function () {
             const { factory, shield, badShield, alice } = context
-            expect(
-                await getShields(ethers.provider, alice.address, factory)
-            ).to.have.members([
+            expect(await getShields(alice.address, factory)).to.have.members([
                 shield.contract.address,
                 badShield.contract.address,
             ])
@@ -68,7 +88,7 @@ describe('Shield', function () {
 
         it('Should get all users', async function () {
             const { shield, alice } = context
-            expect(await shield.getUsers(ethers.provider))
+            expect(await shield.getUsers())
                 .to.have.property(alice.address)
                 .which.have.members(['admin', 'employee'])
         })
@@ -83,7 +103,7 @@ describe('Shield', function () {
 
         it('Should get all policies', async function () {
             const { shield, alice } = context
-            expect(await shield.getPolicies(ethers.provider))
+            expect(await shield.getPolicies())
                 .to.have.property('admin-policy')
                 .which.deep.equal([['admin']])
         })
@@ -97,9 +117,7 @@ describe('Shield', function () {
 
         it('Should get all assignments', async function () {
             const { shield, alice } = context
-            const assignments = await shield.getAssignedPolicies(
-                ethers.provider
-            )
+            const assignments = await shield.getAssignedPolicies()
             expect(assignments).to.have.property(shield.contract.address)
             for (let f of [
                 'addRoles',
@@ -166,7 +184,7 @@ describe('Shield', function () {
             )
             await shield.setUser(alice, bob.address, roles, credentials)
             expect(await shield.getUser(bob.address)).to.have.members(roles)
-            const users = await shield.getUsers(ethers.provider)
+            const users = await shield.getUsers()
             expect(users)
                 .to.have.property(alice.address)
                 .which.have.members(['admin', 'employee'])
