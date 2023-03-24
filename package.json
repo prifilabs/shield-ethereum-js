@@ -4,7 +4,7 @@
     "description": "The Shield - customizable smart contract protection",
     "main": "lib/index.js",
     "scripts": {
-        "build": "npx tsc --project tsconfig.build.json",
+        "build": "npx tsc",
         "test": "npx hardhat test",
         "coverage": "nyc ts-mocha test/index.spec.ts && npx hardhat coverage",
         "prepare": "husky install"
