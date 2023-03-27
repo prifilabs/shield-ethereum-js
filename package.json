@@ -1,6 +1,6 @@
 {
     "name": "@prifilabs/shield-ethereum-js",
-    "version": "0.1.9",
+    "version": "0.1.10",
     "description": "The Shield - customizable smart contract protection",
     "main": "lib/index.js",
     "scripts": {
@@ -36,7 +36,6 @@
     },
     "dependencies": {
         "@openzeppelin/contracts": "^4.8.2",
-        "async-lock": "^1.4.0",
         "ethers": "^5.7.2"
     },
     "lint-staged": {

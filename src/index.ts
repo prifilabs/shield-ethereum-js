@@ -1,9 +1,6 @@
 import { ethers } from 'ethers'
 import { getBytesFromRoles, getRolesFromBytes } from './utils'
 import { Credentials } from './types'
-import AsyncLock from 'async-lock'
-
-const lock = new AsyncLock()
 
 import CONFIG from './config.json'
 import SHIELD from '../artifacts/contracts/Shield.sol/Shield.json'
@@ -88,43 +85,25 @@ export function decodeCredentials(encodedCredentials: string): Credentials {
     return { to, call, timestamp, approvals: approvals.map(atob) }
 }
 
-let cache = {}
-
 export async function getShieldName(
     address: string,
     factory: ethers.Contract
 ): Promise<string> {
-    return lock.acquire('getShieldName', async function () {
-        if (factory.address in cache) {
-            if (address in cache[factory.address].data) {
-                return cache[factory.address].data[address]
-            }
-        } else {
-            cache[factory.address] = {
-                lastblock: factory.deployTransaction.blockNumber,
-                data: {},
-            }
+    let events = await factory.queryFilter('ShieldCreated', 0, 'latest')
+    for (let event of events) {
+        const [_, addr, name] = event.args
+        if (address == addr) {
+            return ethers.utils.parseBytes32String(name)
         }
-        let events = await factory.queryFilter(
-            'ShieldCreated',
-            cache[factory.address].lastBlock + 1,
-            'latest'
-        )
-        for (let event of events) {
-            const [_, address, name] = event.args
-            cache[factory.address].data[address] =
-                ethers.utils.parseBytes32String(name)
-        }
-        return cache[factory.address].data[address]
-    })
+    }
+    throw new Error(`cannot find a shield deployed at ${address}`)
 }
 
 export async function getShields(
     address: string,
     factory: ethers.Contract
 ): Promise<string[]> {
-    const firstBlock = factory.deployTransaction.blockNumber
-    let events = await factory.queryFilter('UserAdded', firstBlock, 'latest')
+    let events = await factory.queryFilter('UserAdded', 0, 'latest')
     const shields = new Set<string>()
     events.forEach(function (event) {
         const [shield, user] = event.args
@@ -212,12 +191,7 @@ export class Shield {
     }
 
     async getUsers(): Promise<{ [address: string]: string[] }> {
-        const firstBlock = (await this.contract.born()).toNumber()
-        let events = await this.contract.queryFilter(
-            'UserSet',
-            firstBlock,
-            'latest'
-        )
+        let events = await this.contract.queryFilter('UserSet', 0, 'latest')
         const roles = await this.contract.getRoles()
         const users = {}
         for (let event of events) {
@@ -270,12 +244,7 @@ export class Shield {
     }
 
     async getPolicies(): Promise<{ [label: string]: string[][] }> {
-        const firstBlock = (await this.contract.born()).toNumber()
-        let events = await this.contract.queryFilter(
-            'PolicyAdded',
-            firstBlock,
-            'latest'
-        )
+        let events = await this.contract.queryFilter('PolicyAdded', 0, 'latest')
         const roles = await this.contract.getRoles()
         const policies = {}
         for (let event of events) {
@@ -344,10 +313,9 @@ export class Shield {
     async getAssignedPolicies(): Promise<{
         [address: string]: { [func: string]: string }
     }> {
-        const firstBlock = (await this.contract.born()).toNumber()
         let events = await this.contract.queryFilter(
             'PolicyAssigned',
-            firstBlock,
+            0,
             'latest'
         )
         const assignments = {}
