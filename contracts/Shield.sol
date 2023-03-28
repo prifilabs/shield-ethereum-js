@@ -6,13 +6,12 @@ import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 import '@openzeppelin/contracts/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 
-import "hardhat/console.sol";
 import './ShieldFactory.sol';
 
 struct Credentials {
     address to;
-    bytes call;
     uint timestamp;
+    bytes call;
     bytes[] approvals;
 }
 
@@ -36,11 +35,11 @@ abstract contract Shieldable {
 
     modifier checkCredentials(Credentials calldata credentials) {
         if (shield.paused()) {
-            if (!(address(this) == address(shield) && msg.sig == 0xda1f874d)) {
+            if (!(address(this) == address(shield) && msg.sig == 0x20f1fdd4)) {
                 revert InvalidCredentials('The Shield is paused');
             }
         }
-        uint l = msg.data.length - abi.encode(credentials).length;
+        uint l = msg.data.length - abi.encode(credentials).length + 32;
         shield.validateCredentials(
             credentials,
             msg.sender,
@@ -55,8 +54,6 @@ abstract contract Shieldable {
 }
 
 contract Shield is Shieldable, Initializable, ReentrancyGuard {
-    
-    uint public born;
     ShieldFactory private factory;
     bool public paused;
     bytes32[] internal roles;
@@ -83,10 +80,8 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
         User[] calldata _users,
         bytes8[] calldata policy
     ) public initializer {
-        born = block.number;
         factory = _factory;
         shield = this;
-        paused = false;
         if (_roles.length > 64)
             revert ShieldError('The Shield cannot have more than 64 roles');
         roles = _roles;
@@ -99,13 +94,13 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
 
         // auto-administration
         _addPolicy('admin-policy', policy);
-        _assignPolicy(address(this), 0x4aece76e, 'admin-policy');
-        _assignPolicy(address(this), 0x5ebbc32a, 'admin-policy');
-        _assignPolicy(address(this), 0x1df0be84, 'admin-policy');
-        _assignPolicy(address(this), 0x02eba6ce, 'admin-policy');
-        _assignPolicy(address(this), 0xe1b7351f, 'admin-policy');
-        _assignPolicy(address(this), 0xda1f874d, 'admin-policy');
-        _assignPolicy(address(this), 0x50542f2a, 'admin-policy');
+        _assignPolicy(address(this), 0xfb3c2cec, 'admin-policy');
+        _assignPolicy(address(this), 0x226e6186, 'admin-policy');
+        _assignPolicy(address(this), 0x3ae499f2, 'admin-policy');
+        _assignPolicy(address(this), 0xeda06514, 'admin-policy');
+        _assignPolicy(address(this), 0xccf77da1, 'admin-policy');
+        _assignPolicy(address(this), 0x20f1fdd4, 'admin-policy');
+        _assignPolicy(address(this), 0x7b9a91a8, 'admin-policy');
     }
 
     // If you change the signature of this function, do not forget to update the function signature in the function 'initialize'
@@ -130,7 +125,7 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
     function _setUser(address addr, bytes8 _roles) private {
         bytes8 mask = _getMask();
         _roles = _roles & mask;
-        if (users[addr] == bytes8(0)){
+        if (users[addr] == bytes8(0)) {
             factory.addUser(address(this), addr);
         }
         users[addr] = _roles;
@@ -213,6 +208,7 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
     }
 
     receive() external payable {}
+
     fallback() external payable {}
 
     function transfer(
@@ -237,20 +233,19 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
         if (credentials.to != to) {
             revert InvalidCredentials('Contract mismatch');
         }
-        // This makes it totally insecured
-        // if (keccak256(call) != keccak256(credentials.call)) {
-        //     revert InvalidCredentials('Function mismatch');
-        // }
+        if (keccak256(call) != keccak256(credentials.call)) {
+            revert InvalidCredentials('Function mismatch');
+        }
         if (credentials.approvals.length == 0) {
             revert InvalidCredentials('Approvals cannot be empty');
         }
         bytes8[] memory policy = getAssignedPolicy(to, f);
-        if (full){
+        if (full) {
             if (credentials.approvals.length != policy.length) {
                 revert InvalidCredentials('Incorrect number of approvals');
             }
-        }else{
-            if (credentials.approvals.length > policy.length){
+        } else {
+            if (credentials.approvals.length > policy.length) {
                 revert InvalidCredentials('Incorrect number of approvals');
             }
         }

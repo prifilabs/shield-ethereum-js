@@ -43,14 +43,12 @@ export async function createCredentials(
 ): Promise<Credentials> {
     const nullCredential = {
         to: ethers.constants.AddressZero,
-        call: ethers.constants.HashZero,
         timestamp: 0,
+        call: ethers.constants.HashZero,
         approvals: [],
     }
     let call = to.interface.encodeFunctionData(func, [...args, nullCredential])
-    // types = types.slice(0, -1)
-    // const len = ethers.utils.defaultAbiCoder.encode(types, args).length
-    // call = call.slice(0, len + 8)
+    call = call.slice(0, call.length - 448)
     const timestamp = Math.floor(new Date().getTime())
     const signature = await signData(
         signer,
@@ -466,9 +464,22 @@ export class Shield {
         let func, args
         if (credentials.to in this.abis) {
             func = this.abis[credentials.to].getFunction(sig).name
+            const nullCredentials = ethers.utils.hexStripZeros(
+                ethers.utils.defaultAbiCoder.encode(
+                    ['tuple(address, uint, bytes, bytes[])'],
+                    [
+                        [
+                            ethers.constants.AddressZero,
+                            0,
+                            ethers.constants.HashZero,
+                            [],
+                        ],
+                    ]
+                )
+            )
             args = this.abis[credentials.to].decodeFunctionData(
-                sig,
-                credentials.call
+                func,
+                ethers.utils.hexConcat([credentials.call, nullCredentials])
             )
             args = args.slice(0, -1)
         } else {

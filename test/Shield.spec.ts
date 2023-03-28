@@ -126,6 +126,7 @@ describe('Shield', function () {
                 'assignPolicy',
                 'pause',
                 'unpause',
+                'transfer',
             ]) {
                 // console.log(await shield.contract.interface.getSighash(f));
                 expect(assignments[shield.contract.address]).to.have.property(
@@ -144,6 +145,7 @@ describe('Shield', function () {
                 'assignPolicy',
                 'pause',
                 'unpause',
+                'transfer',
             ]) {
                 // console.log(await shield.contract.interface.getSighash(f));
                 expect(
@@ -394,7 +396,7 @@ describe('Shield', function () {
             )
         })
 
-        it.skip('Should reject if the function is different', async function () {
+        it('Should reject if the function is different', async function () {
             const { shield, alice } = context
             const credentials = await shield.createCredentialsForAddRoles(
                 alice,

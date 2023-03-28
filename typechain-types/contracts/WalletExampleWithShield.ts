@@ -29,21 +29,21 @@ import type {
 
 export type CredentialsStruct = {
   to: PromiseOrValue<string>;
-  call: PromiseOrValue<BytesLike>;
   timestamp: PromiseOrValue<BigNumberish>;
+  call: PromiseOrValue<BytesLike>;
   approvals: PromiseOrValue<BytesLike>[];
 };
 
-export type CredentialsStructOutput = [string, string, BigNumber, string[]] & {
+export type CredentialsStructOutput = [string, BigNumber, string, string[]] & {
   to: string;
-  call: string;
   timestamp: BigNumber;
+  call: string;
   approvals: string[];
 };
 
 export interface WalletExampleWithShieldInterface extends utils.Interface {
   functions: {
-    "withdraw(uint256,(address,bytes,uint256,bytes[]))": FunctionFragment;
+    "withdraw(uint256,(address,uint256,bytes,bytes[]))": FunctionFragment;
   };
 
   getFunction(nameOrSignatureOrTopic: "withdraw"): FunctionFragment;

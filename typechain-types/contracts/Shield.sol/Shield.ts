@@ -30,15 +30,15 @@ import type {
 
 export type CredentialsStruct = {
   to: PromiseOrValue<string>;
-  call: PromiseOrValue<BytesLike>;
   timestamp: PromiseOrValue<BigNumberish>;
+  call: PromiseOrValue<BytesLike>;
   approvals: PromiseOrValue<BytesLike>[];
 };
 
-export type CredentialsStructOutput = [string, string, BigNumber, string[]] & {
+export type CredentialsStructOutput = [string, BigNumber, string, string[]] & {
   to: string;
-  call: string;
   timestamp: BigNumber;
+  call: string;
   approvals: string[];
 };
 
@@ -54,22 +54,21 @@ export type UserStructOutput = [string, string] & {
 
 export interface ShieldInterface extends utils.Interface {
   functions: {
-    "addPolicy(bytes32,bytes8[],(address,bytes,uint256,bytes[]))": FunctionFragment;
-    "addRoles(bytes32[],(address,bytes,uint256,bytes[]))": FunctionFragment;
-    "assignPolicy(address,bytes4,bytes32,(address,bytes,uint256,bytes[]))": FunctionFragment;
-    "born()": FunctionFragment;
-    "burnCredentials((address,bytes,uint256,bytes[]))": FunctionFragment;
+    "addPolicy(bytes32,bytes8[],(address,uint256,bytes,bytes[]))": FunctionFragment;
+    "addRoles(bytes32[],(address,uint256,bytes,bytes[]))": FunctionFragment;
+    "assignPolicy(address,bytes4,bytes32,(address,uint256,bytes,bytes[]))": FunctionFragment;
+    "burnCredentials((address,uint256,bytes,bytes[]))": FunctionFragment;
     "getAssignedPolicy(address,bytes4)": FunctionFragment;
     "getPolicy(bytes32)": FunctionFragment;
     "getRoles()": FunctionFragment;
     "getUser(address)": FunctionFragment;
     "initialize(address,bytes32[],(address,bytes8)[],bytes8[])": FunctionFragment;
-    "pause((address,bytes,uint256,bytes[]))": FunctionFragment;
+    "pause((address,uint256,bytes,bytes[]))": FunctionFragment;
     "paused()": FunctionFragment;
-    "setUser(address,bytes8,(address,bytes,uint256,bytes[]))": FunctionFragment;
-    "transfer(address,uint256,(address,bytes,uint256,bytes[]))": FunctionFragment;
-    "unpause((address,bytes,uint256,bytes[]))": FunctionFragment;
-    "validateCredentials((address,bytes,uint256,bytes[]),address,address,bytes4,bytes,bool)": FunctionFragment;
+    "setUser(address,bytes8,(address,uint256,bytes,bytes[]))": FunctionFragment;
+    "transfer(address,uint256,(address,uint256,bytes,bytes[]))": FunctionFragment;
+    "unpause((address,uint256,bytes,bytes[]))": FunctionFragment;
+    "validateCredentials((address,uint256,bytes,bytes[]),address,address,bytes4,bytes,bool)": FunctionFragment;
   };
 
   getFunction(
@@ -77,7 +76,6 @@ export interface ShieldInterface extends utils.Interface {
       | "addPolicy"
       | "addRoles"
       | "assignPolicy"
-      | "born"
       | "burnCredentials"
       | "getAssignedPolicy"
       | "getPolicy"
@@ -113,7 +111,6 @@ export interface ShieldInterface extends utils.Interface {
       CredentialsStruct
     ]
   ): string;
-  encodeFunctionData(functionFragment: "born", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "burnCredentials",
     values: [CredentialsStruct]
@@ -183,7 +180,6 @@ export interface ShieldInterface extends utils.Interface {
     functionFragment: "assignPolicy",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "born", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "burnCredentials",
     data: BytesLike
@@ -342,8 +338,6 @@ export interface Shield extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
-    born(overrides?: CallOverrides): Promise<[BigNumber]>;
-
     burnCredentials(
       credentials: CredentialsStruct,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
@@ -433,8 +427,6 @@ export interface Shield extends BaseContract {
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
-  born(overrides?: CallOverrides): Promise<BigNumber>;
-
   burnCredentials(
     credentials: CredentialsStruct,
     overrides?: Overrides & { from?: PromiseOrValue<string> }
@@ -523,8 +515,6 @@ export interface Shield extends BaseContract {
       credentials: CredentialsStruct,
       overrides?: CallOverrides
     ): Promise<void>;
-
-    born(overrides?: CallOverrides): Promise<BigNumber>;
 
     burnCredentials(
       credentials: CredentialsStruct,
@@ -662,8 +652,6 @@ export interface Shield extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
-    born(overrides?: CallOverrides): Promise<BigNumber>;
-
     burnCredentials(
       credentials: CredentialsStruct,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
@@ -753,8 +741,6 @@ export interface Shield extends BaseContract {
       credentials: CredentialsStruct,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
-
-    born(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     burnCredentials(
       credentials: CredentialsStruct,
