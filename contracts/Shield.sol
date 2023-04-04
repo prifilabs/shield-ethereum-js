@@ -9,8 +9,9 @@ import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import './ShieldFactory.sol';
 
 struct Credentials {
-    address to;
     uint timestamp;
+    uint chainid;
+    address to;
     bytes call;
     bytes[] approvals;
 }
@@ -35,7 +36,7 @@ abstract contract Shieldable {
 
     modifier checkCredentials(Credentials calldata credentials) {
         if (shield.paused()) {
-            if (!(address(this) == address(shield) && msg.sig == 0x20f1fdd4)) {
+            if (!(address(this) == address(shield) && msg.sig == 0xe8fc5b2c)) {
                 revert InvalidCredentials('The Shield is paused');
             }
         }
@@ -94,13 +95,13 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
 
         // auto-administration
         _addPolicy('admin-policy', policy);
-        _assignPolicy(address(this), 0xfb3c2cec, 'admin-policy');
-        _assignPolicy(address(this), 0x226e6186, 'admin-policy');
-        _assignPolicy(address(this), 0x3ae499f2, 'admin-policy');
-        _assignPolicy(address(this), 0xeda06514, 'admin-policy');
-        _assignPolicy(address(this), 0xccf77da1, 'admin-policy');
-        _assignPolicy(address(this), 0x20f1fdd4, 'admin-policy');
-        _assignPolicy(address(this), 0x7b9a91a8, 'admin-policy');
+        _assignPolicy(address(this), 0x11d5776e, 'admin-policy');
+        _assignPolicy(address(this), 0xf4163a2d, 'admin-policy');
+        _assignPolicy(address(this), 0x91525691, 'admin-policy');
+        _assignPolicy(address(this), 0x24877e58, 'admin-policy');
+        _assignPolicy(address(this), 0x8441e0af, 'admin-policy');
+        _assignPolicy(address(this), 0xe8fc5b2c, 'admin-policy');
+        _assignPolicy(address(this), 0x73c62905, 'admin-policy');
     }
 
     // If you change the signature of this function, do not forget to update the function signature in the function 'initialize'
@@ -230,6 +231,9 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
         bytes calldata call,
         bool full
     ) public view returns (address[] memory) {
+        if (credentials.chainid != block.chainid) {
+            revert InvalidCredentials('Chain ID mismatch');
+        }
         if (credentials.to != to) {
             revert InvalidCredentials('Contract mismatch');
         }
@@ -259,9 +263,10 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
             if (i == 0) {
                 signerHash = keccak256(
                     abi.encode(
+                        credentials.timestamp,
+                        credentials.chainid,
                         credentials.to,
-                        credentials.call,
-                        credentials.timestamp
+                        credentials.call
                     )
                 );
             } else {
@@ -298,7 +303,12 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
 
     function burnCredentials(Credentials calldata credentials) public {
         bytes32 signerHash = keccak256(
-            abi.encode(credentials.to, credentials.call, credentials.timestamp)
+            abi.encode(
+                credentials.timestamp,
+                credentials.chainid,
+                credentials.to,
+                credentials.call
+            )
         );
         address signer = signerHash.toEthSignedMessageHash().recover(
             credentials.approvals[0]

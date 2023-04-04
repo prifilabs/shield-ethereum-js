@@ -29,15 +29,23 @@ import type {
 } from "../../common";
 
 export type CredentialsStruct = {
-  to: PromiseOrValue<string>;
   timestamp: PromiseOrValue<BigNumberish>;
+  chainid: PromiseOrValue<BigNumberish>;
+  to: PromiseOrValue<string>;
   call: PromiseOrValue<BytesLike>;
   approvals: PromiseOrValue<BytesLike>[];
 };
 
-export type CredentialsStructOutput = [string, BigNumber, string, string[]] & {
-  to: string;
+export type CredentialsStructOutput = [
+  BigNumber,
+  BigNumber,
+  string,
+  string,
+  string[]
+] & {
   timestamp: BigNumber;
+  chainid: BigNumber;
+  to: string;
   call: string;
   approvals: string[];
 };
@@ -54,21 +62,21 @@ export type UserStructOutput = [string, string] & {
 
 export interface ShieldInterface extends utils.Interface {
   functions: {
-    "addPolicy(bytes32,bytes8[],(address,uint256,bytes,bytes[]))": FunctionFragment;
-    "addRoles(bytes32[],(address,uint256,bytes,bytes[]))": FunctionFragment;
-    "assignPolicy(address,bytes4,bytes32,(address,uint256,bytes,bytes[]))": FunctionFragment;
-    "burnCredentials((address,uint256,bytes,bytes[]))": FunctionFragment;
+    "addPolicy(bytes32,bytes8[],(uint256,uint256,address,bytes,bytes[]))": FunctionFragment;
+    "addRoles(bytes32[],(uint256,uint256,address,bytes,bytes[]))": FunctionFragment;
+    "assignPolicy(address,bytes4,bytes32,(uint256,uint256,address,bytes,bytes[]))": FunctionFragment;
+    "burnCredentials((uint256,uint256,address,bytes,bytes[]))": FunctionFragment;
     "getAssignedPolicy(address,bytes4)": FunctionFragment;
     "getPolicy(bytes32)": FunctionFragment;
     "getRoles()": FunctionFragment;
     "getUser(address)": FunctionFragment;
     "initialize(address,bytes32[],(address,bytes8)[],bytes8[])": FunctionFragment;
-    "pause((address,uint256,bytes,bytes[]))": FunctionFragment;
+    "pause((uint256,uint256,address,bytes,bytes[]))": FunctionFragment;
     "paused()": FunctionFragment;
-    "setUser(address,bytes8,(address,uint256,bytes,bytes[]))": FunctionFragment;
-    "transfer(address,uint256,(address,uint256,bytes,bytes[]))": FunctionFragment;
-    "unpause((address,uint256,bytes,bytes[]))": FunctionFragment;
-    "validateCredentials((address,uint256,bytes,bytes[]),address,address,bytes4,bytes,bool)": FunctionFragment;
+    "setUser(address,bytes8,(uint256,uint256,address,bytes,bytes[]))": FunctionFragment;
+    "transfer(address,uint256,(uint256,uint256,address,bytes,bytes[]))": FunctionFragment;
+    "unpause((uint256,uint256,address,bytes,bytes[]))": FunctionFragment;
+    "validateCredentials((uint256,uint256,address,bytes,bytes[]),address,address,bytes4,bytes,bool)": FunctionFragment;
   };
 
   getFunction(

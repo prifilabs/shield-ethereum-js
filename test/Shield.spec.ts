@@ -56,8 +56,6 @@ describe('Shield', function () {
             const { alice } = context
             const sepoliaFactory = await getDefaultFactory(alice, 'sepolia')
             expect(sepoliaFactory.address).to.equal(CONFIG.sepolia)
-            const goerliFactory = await getDefaultFactory(alice, 'goerli')
-            expect(goerliFactory.address).to.equal(CONFIG.goerli)
         })
 
         it('Should get the names of the deployed shield', async function () {
@@ -117,6 +115,17 @@ describe('Shield', function () {
 
         it('Should get all assignments', async function () {
             const { shield, alice } = context
+            // for (let f of [
+            //     'addRoles',
+            //     'setUser',
+            //     'addPolicy',
+            //     'assignPolicy',
+            //     'pause',
+            //     'unpause',
+            //     'transfer',
+            // ]) {
+            //     console.log(await shield.contract.interface.getSighash(f));
+            // };
             const assignments = await shield.getAssignedPolicies()
             expect(assignments).to.have.property(shield.contract.address)
             for (let f of [
@@ -128,7 +137,6 @@ describe('Shield', function () {
                 'unpause',
                 'transfer',
             ]) {
-                // console.log(await shield.contract.interface.getSighash(f));
                 expect(assignments[shield.contract.address]).to.have.property(
                     f,
                     'admin-policy'
@@ -147,7 +155,6 @@ describe('Shield', function () {
                 'unpause',
                 'transfer',
             ]) {
-                // console.log(await shield.contract.interface.getSighash(f));
                 expect(
                     await shield.getAssignedPolicy(shield.contract.address, f)
                 ).to.deep.equal([['admin']])
@@ -265,6 +272,7 @@ describe('Shield', function () {
             const { shield, bob } = context
             const credentials = await shield.createCredentialsForPause(bob)
             await shield.pause(bob, credentials)
+            expect(await shield.isPaused()).to.be.true
         })
 
         it('Should not be able to call anything but unpause', async function () {

@@ -28,22 +28,30 @@ import type {
 } from "../common";
 
 export type CredentialsStruct = {
-  to: PromiseOrValue<string>;
   timestamp: PromiseOrValue<BigNumberish>;
+  chainid: PromiseOrValue<BigNumberish>;
+  to: PromiseOrValue<string>;
   call: PromiseOrValue<BytesLike>;
   approvals: PromiseOrValue<BytesLike>[];
 };
 
-export type CredentialsStructOutput = [string, BigNumber, string, string[]] & {
-  to: string;
+export type CredentialsStructOutput = [
+  BigNumber,
+  BigNumber,
+  string,
+  string,
+  string[]
+] & {
   timestamp: BigNumber;
+  chainid: BigNumber;
+  to: string;
   call: string;
   approvals: string[];
 };
 
 export interface WalletExampleWithShieldInterface extends utils.Interface {
   functions: {
-    "withdraw(uint256,(address,uint256,bytes,bytes[]))": FunctionFragment;
+    "withdraw(uint256,(uint256,uint256,address,bytes,bytes[]))": FunctionFragment;
   };
 
   getFunction(nameOrSignatureOrTopic: "withdraw"): FunctionFragment;

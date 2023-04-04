@@ -41,46 +41,71 @@ export async function createCredentials(
     func: string,
     args: any[]
 ): Promise<Credentials> {
+    const chainid = await signer.getChainId()
     const nullCredential = {
-        to: ethers.constants.AddressZero,
         timestamp: 0,
+        chainid,
+        to: ethers.constants.AddressZero,
         call: ethers.constants.HashZero,
         approvals: [],
     }
+    const l =
+        ethers.utils.defaultAbiCoder.encode(
+            ['uint', 'uint', 'address', 'bytes', 'bytes[]'],
+            [
+                nullCredential.timestamp,
+                nullCredential.chainid,
+                nullCredential.to,
+                nullCredential.call,
+                nullCredential.approvals,
+            ]
+        ).length - 2
     let call = to.interface.encodeFunctionData(func, [...args, nullCredential])
-    call = call.slice(0, call.length - 448)
+    call = call.slice(0, call.length - l)
     const timestamp = Math.floor(new Date().getTime())
     const signature = await signData(
         signer,
-        ['address', 'bytes', 'uint'],
-        [to.address, call, timestamp]
+        ['uint', 'uint', 'address', 'bytes'],
+        [timestamp, chainid, to.address, call]
     )
-    return { to: to.address, call, timestamp, approvals: [signature] }
+    return { timestamp, chainid, to: to.address, call, approvals: [signature] }
 }
 
 export async function approveCredentials(
     signer: ethers.Signer,
     credentials: Credentials
 ): Promise<Credentials> {
-    const { to, call, timestamp, approvals } = credentials
+    const { timestamp, chainid, to, call, approvals } = credentials
     const lastSignature = approvals[approvals.length - 1]
     const signature = await signData(signer, ['bytes'], [lastSignature])
-    return { to, call, timestamp, approvals: [...approvals, signature] }
+    return {
+        timestamp,
+        chainid,
+        to,
+        call,
+        approvals: [...approvals, signature],
+    }
 }
 
 export function encodeCredentials(credentials: Credentials): string {
-    const { to, call, timestamp, approvals } = credentials
+    const { timestamp, chainid, to, call, approvals } = credentials
 
     return btoa(
-        JSON.stringify({ to, call, timestamp, approvals: approvals.map(btoa) })
+        JSON.stringify({
+            timestamp,
+            chainid,
+            to,
+            call,
+            approvals: approvals.map(btoa),
+        })
     )
 }
 
 export function decodeCredentials(encodedCredentials: string): Credentials {
-    const { to, call, timestamp, approvals } = JSON.parse(
+    const { timestamp, chainid, to, call, approvals } = JSON.parse(
         atob(encodedCredentials)
     )
-    return { to, call, timestamp, approvals: approvals.map(atob) }
+    return { timestamp, chainid, to, call, approvals: approvals.map(atob) }
 }
 
 export async function getShieldName(
@@ -440,16 +465,22 @@ export class Shield {
         credentials: Credentials,
         full?: boolean
     ): Promise<{
+        chainid: number
+        timestamp: number
         to: string
         func: string
         args: any[]
-        timestamp: number
         approvals: string[]
     }> {
         full = typeof full === 'undefined' ? false : full
         const signer = await getSigner(
-            ['address', 'bytes', 'uint'],
-            [credentials.to, credentials.call, credentials.timestamp],
+            ['uint', 'uint', 'address', 'bytes'],
+            [
+                credentials.timestamp,
+                credentials.chainid,
+                credentials.to,
+                credentials.call,
+            ],
             credentials.approvals[0]
         )
         let sig = credentials.call.slice(0, 10)
@@ -487,10 +518,11 @@ export class Shield {
             args = [credentials.call.slice(10)]
         }
         return {
+            chainid: credentials.chainid,
+            timestamp: credentials.timestamp,
             to: credentials.to,
             func,
             args,
-            timestamp: credentials.timestamp,
             approvals: signers,
         }
     }
