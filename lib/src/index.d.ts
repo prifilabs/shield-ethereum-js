@@ -3,6 +3,7 @@ import { Credentials } from './types';
 export declare function getDefaultFactory(signer: ethers.Signer, network: string): Promise<ethers.Contract>;
 export declare function createCredentials(signer: ethers.Signer, to: ethers.Contract, func: string, args: any[]): Promise<Credentials>;
 export declare function approveCredentials(signer: ethers.Signer, credentials: Credentials): Promise<Credentials>;
+export declare function encodeCredentials(credentials: Credentials): string;
 export declare function decodeCredentials(encodedCredentials: string): Credentials;
 export declare function executeCredentials(signer: ethers.Signer, credentials: Credentials, iface: ethers.utils.Interface, options?: any): Promise<ethers.Transaction>;
 export declare function getShieldName(address: string, factory: ethers.Contract): Promise<string>;

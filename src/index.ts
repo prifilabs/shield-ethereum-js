@@ -57,6 +57,14 @@ export async function approveCredentials(
     }
 }
 
+export function encodeCredentials(credentials: Credentials): string {
+    const { to, call, timestamp, approvals } = credentials
+
+    return btoa(
+        JSON.stringify({ to, call, timestamp, approvals: approvals.map(btoa) })
+    )
+}
+
 export function decodeCredentials(encodedCredentials: string): Credentials {
     const { timestamp, chainid, to, call, approvals } = JSON.parse(
         atob(encodedCredentials)
