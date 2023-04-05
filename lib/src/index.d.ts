@@ -3,8 +3,8 @@ import { Credentials } from './types';
 export declare function getDefaultFactory(signer: ethers.Signer, network: string): Promise<ethers.Contract>;
 export declare function createCredentials(signer: ethers.Signer, to: ethers.Contract, func: string, args: any[]): Promise<Credentials>;
 export declare function approveCredentials(signer: ethers.Signer, credentials: Credentials): Promise<Credentials>;
-export declare function encodeCredentials(credentials: Credentials): string;
 export declare function decodeCredentials(encodedCredentials: string): Credentials;
+export declare function executeCredentials(signer: ethers.Signer, credentials: Credentials, iface: ethers.utils.Interface, options?: any): Promise<ethers.Transaction>;
 export declare function getShieldName(address: string, factory: ethers.Contract): Promise<string>;
 export declare function getShields(address: string, factory: ethers.Contract): Promise<string[]>;
 export declare function createShield(signer: ethers.Signer, name: string, roles: any[], users: any[], policy: any[], factory: ethers.Contract): Promise<{
@@ -21,19 +21,16 @@ export declare class Shield {
     addInterface(address: string, iface: ethers.utils.Interface): void;
     getRoles(): Promise<string[]>;
     createCredentialsForAddRoles(signer: ethers.Signer, roles: string[]): Promise<Credentials>;
-    addRoles(signer: ethers.Signer, roles: string[], credentials: Credentials): Promise<ethers.Transaction>;
     getUsers(): Promise<{
         [address: string]: string[];
     }>;
     getUser(address: string): Promise<string[]>;
     createCredentialsForSetUser(signer: ethers.Signer, address: any, roles: string[]): Promise<Credentials>;
-    setUser(signer: ethers.Signer, address: any, roles: string[], credentials: Credentials): Promise<ethers.Transaction>;
     getPolicies(): Promise<{
         [label: string]: string[][];
     }>;
     getPolicy(label: string): Promise<string[][]>;
     createCredentialsForAddPolicy(signer: ethers.Signer, label: string, policy: string[][]): Promise<Credentials>;
-    addPolicy(signer: ethers.Signer, label: string, policy: string[][], credentials: Credentials): Promise<ethers.Transaction>;
     getAssignedPolicies(): Promise<{
         [address: string]: {
             [func: string]: string;
@@ -41,20 +38,18 @@ export declare class Shield {
     }>;
     getAssignedPolicy(to: string, func: string): Promise<string>;
     createCredentialsForAssignPolicy(signer: ethers.Signer, to: string, func: string, label: string): Promise<Credentials>;
-    assignPolicy(signer: ethers.Signer, to: string, func: string, label: string, credentials: Credentials): Promise<ethers.Transaction>;
     isPaused(): Promise<boolean>;
     createCredentialsForPause(signer: ethers.Signer): Promise<Credentials>;
-    pause(signer: ethers.Signer, credentials: Credentials): Promise<ethers.Transaction>;
     createCredentialsForUnpause(signer: ethers.Signer): Promise<Credentials>;
-    unpause(signer: ethers.Signer, credentials: Credentials): Promise<ethers.Transaction>;
     createCredentialsForTransfer(signer: ethers.Signer, to: string, amount: number): Promise<Credentials>;
-    transfer(signer: ethers.Signer, to: string, amount: number, credentials: Credentials): Promise<ethers.Transaction>;
     burnCredentials(signer: ethers.Signer, credentials: Credentials): Promise<ethers.Transaction>;
     checkCredentials(credentials: Credentials, full?: boolean): Promise<{
+        chainid: number;
+        timestamp: number;
         to: string;
         func: string;
         args: any[];
-        timestamp: number;
         approvals: string[];
     }>;
+    executeCredentials(signer: ethers.Signer, credentials: Credentials): Promise<ethers.Transaction>;
 }

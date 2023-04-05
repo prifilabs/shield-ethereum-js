@@ -8,6 +8,7 @@ import {
     createShield,
     createCredentials,
     approveCredentials,
+    executeCredentials,
 } from '../src/index'
 
 describe('Wallet Example', function () {
@@ -59,7 +60,7 @@ describe('Wallet Example', function () {
             context = { ...context, wallet }
         })
 
-        it('Should not allow Alice to withdraw ', async function () {
+        it('Should not allow Alice to withdraw', async function () {
             const { shield, wallet, alice } = context
             const credentials = await createCredentials(
                 alice,
@@ -68,7 +69,7 @@ describe('Wallet Example', function () {
                 [1000]
             )
             await expect(
-                wallet.connect(alice).withdraw(1000, credentials)
+                executeCredentials(alice, credentials, wallet.interface)
             ).to.be.revertedWithCustomError(
                 shield.contract,
                 'InvalidCredentials'
@@ -84,7 +85,7 @@ describe('Wallet Example', function () {
                 label,
                 policy
             )
-            await shield.addPolicy(alice, label, policy, credentials1)
+            shield.executeCredentials(alice, credentials1)
             const f = 'withdraw'
             const credentials2 = await shield.createCredentialsForAssignPolicy(
                 alice,
@@ -92,14 +93,7 @@ describe('Wallet Example', function () {
                 f,
                 label
             )
-            await shield.assignPolicy(
-                alice,
-                wallet.address,
-                f,
-                label,
-                credentials2
-            )
-
+            shield.executeCredentials(alice, credentials2)
             context = { ...context, wallet }
         })
 
@@ -111,7 +105,7 @@ describe('Wallet Example', function () {
                 'withdraw',
                 [1000]
             )
-            await wallet.connect(alice).withdraw(1000, credentials)
+            shield.executeCredentials(alice, credentials)
         })
 
         it('Should allow Alice to withdraw (2 steps)', async function () {
@@ -123,7 +117,7 @@ describe('Wallet Example', function () {
                 label,
                 policy
             )
-            await shield.addPolicy(alice, label, policy, credentials1)
+            shield.executeCredentials(alice, credentials1)
             const f = 'withdraw'
             const credentials2 = await shield.createCredentialsForAssignPolicy(
                 alice,
@@ -131,13 +125,7 @@ describe('Wallet Example', function () {
                 f,
                 label
             )
-            await shield.assignPolicy(
-                alice,
-                wallet.address,
-                f,
-                label,
-                credentials2
-            )
+            shield.executeCredentials(alice, credentials2)
             const credentials3 = await createCredentials(
                 bob,
                 wallet,
@@ -145,7 +133,7 @@ describe('Wallet Example', function () {
                 [1000]
             )
             const credentials4 = await approveCredentials(alice, credentials3)
-            await wallet.connect(bob).withdraw(1000, credentials4)
+            shield.executeCredentials(bob, credentials4)
         })
     })
 

@@ -1,5 +1,12 @@
 import { ethers } from 'ethers'
-import { getBytesFromRoles, getRolesFromBytes } from './utils'
+import {
+    getBytesFromRoles,
+    getRolesFromBytes,
+    signData,
+    getSigner,
+    decodeCallData,
+    encodeCallData,
+} from './utils'
 import { Credentials } from './types'
 
 import CONFIG from './config.json'
@@ -7,24 +14,6 @@ import SHIELD from '../artifacts/contracts/Shield.sol/Shield.json'
 import FACTORY from '../artifacts/contracts/ShieldFactory.sol/ShieldFactory.json'
 
 const SHIELD_INTERFACE = new ethers.utils.Interface(SHIELD.abi)
-
-function signData(signer: ethers.Signer, types: string[], values: any[]) {
-    let message = ethers.utils.arrayify(
-        ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(types, values)
-        )
-    )
-    return signer.signMessage(message)
-}
-
-function getSigner(types: string[], values: any[], signature: string) {
-    let message = ethers.utils.arrayify(
-        ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(types, values)
-        )
-    )
-    return ethers.utils.verifyMessage(message, signature)
-}
 
 export async function getDefaultFactory(
     signer: ethers.Signer,
@@ -42,26 +31,7 @@ export async function createCredentials(
     args: any[]
 ): Promise<Credentials> {
     const chainid = await signer.getChainId()
-    const nullCredential = {
-        timestamp: 0,
-        chainid,
-        to: ethers.constants.AddressZero,
-        call: ethers.constants.HashZero,
-        approvals: [],
-    }
-    const l =
-        ethers.utils.defaultAbiCoder.encode(
-            ['uint', 'uint', 'address', 'bytes', 'bytes[]'],
-            [
-                nullCredential.timestamp,
-                nullCredential.chainid,
-                nullCredential.to,
-                nullCredential.call,
-                nullCredential.approvals,
-            ]
-        ).length - 2
-    let call = to.interface.encodeFunctionData(func, [...args, nullCredential])
-    call = call.slice(0, call.length - l)
+    const call = encodeCallData(func, args, to.interface)
     const timestamp = Math.floor(new Date().getTime())
     const signature = await signData(
         signer,
@@ -87,25 +57,25 @@ export async function approveCredentials(
     }
 }
 
-export function encodeCredentials(credentials: Credentials): string {
-    const { timestamp, chainid, to, call, approvals } = credentials
-
-    return btoa(
-        JSON.stringify({
-            timestamp,
-            chainid,
-            to,
-            call,
-            approvals: approvals.map(btoa),
-        })
-    )
-}
-
 export function decodeCredentials(encodedCredentials: string): Credentials {
     const { timestamp, chainid, to, call, approvals } = JSON.parse(
         atob(encodedCredentials)
     )
     return { timestamp, chainid, to, call, approvals: approvals.map(atob) }
+}
+
+export function executeCredentials(
+    signer: ethers.Signer,
+    credentials: Credentials,
+    iface: ethers.utils.Interface,
+    options?
+): Promise<ethers.Transaction> {
+    if (typeof options === 'undefined') {
+        options = {}
+    }
+    const contract = new ethers.Contract(credentials.to, iface, signer)
+    const { func, args } = decodeCallData(credentials.call, iface)
+    return contract[func].apply(this, [...args, credentials], options)
 }
 
 export async function getShieldName(
@@ -204,15 +174,6 @@ export class Shield {
         return createCredentials(signer, this.contract, 'addRoles', [newRoles])
     }
 
-    async addRoles(
-        signer: ethers.Signer,
-        roles: string[],
-        credentials: Credentials
-    ): Promise<ethers.Transaction> {
-        const newRoles = roles.map(ethers.utils.formatBytes32String)
-        return this.contract.connect(signer).addRoles(newRoles, credentials)
-    }
-
     async getUsers(): Promise<{ [address: string]: string[] }> {
         let events = await this.contract.queryFilter('UserSet', 0, 'latest')
         const roles = await this.contract.getRoles()
@@ -248,22 +209,6 @@ export class Shield {
             address,
             newRoles,
         ])
-    }
-
-    async setUser(
-        signer: ethers.Signer,
-        address: any,
-        roles: string[],
-        credentials: Credentials
-    ): Promise<ethers.Transaction> {
-        const existingRoles = await this.contract.getRoles()
-        const newRoles = getBytesFromRoles(
-            roles.map(ethers.utils.formatBytes32String),
-            existingRoles
-        )
-        return this.contract
-            .connect(signer)
-            .setUser(address, newRoles, credentials)
     }
 
     async getPolicies(): Promise<{ [label: string]: string[][] }> {
@@ -312,25 +257,6 @@ export class Shield {
             newLabel,
             newPolicy,
         ])
-    }
-
-    async addPolicy(
-        signer: ethers.Signer,
-        label: string,
-        policy: string[][],
-        credentials: Credentials
-    ): Promise<ethers.Transaction> {
-        const roles = await this.contract.getRoles()
-        const newLabel = ethers.utils.formatBytes32String(label)
-        const newPolicy = policy.map(function (step: string[]) {
-            return getBytesFromRoles(
-                step.map(ethers.utils.formatBytes32String),
-                roles
-            )
-        })
-        return this.contract
-            .connect(signer)
-            .addPolicy(newLabel, newPolicy, credentials)
     }
 
     async getAssignedPolicies(): Promise<{
@@ -387,23 +313,6 @@ export class Shield {
         ])
     }
 
-    async assignPolicy(
-        signer: ethers.Signer,
-        to: string,
-        func: string,
-        label: string,
-        credentials: Credentials
-    ): Promise<ethers.Transaction> {
-        if (!(to in this.abis)) {
-            throw new Error(`unknown abi for ${to}`)
-        }
-        const sig = this.abis[to].getSighash(func)
-        const newLabel = ethers.utils.formatBytes32String(label)
-        return this.contract
-            .connect(signer)
-            .assignPolicy(to, sig, newLabel, credentials)
-    }
-
     async isPaused(): Promise<boolean> {
         return this.contract.paused()
     }
@@ -414,24 +323,10 @@ export class Shield {
         return createCredentials(signer, this.contract, 'pause', [])
     }
 
-    async pause(
-        signer: ethers.Signer,
-        credentials: Credentials
-    ): Promise<ethers.Transaction> {
-        return this.contract.connect(signer).pause(credentials)
-    }
-
     async createCredentialsForUnpause(
         signer: ethers.Signer
     ): Promise<Credentials> {
         return createCredentials(signer, this.contract, 'unpause', [])
-    }
-
-    async unpause(
-        signer: ethers.Signer,
-        credentials: Credentials
-    ): Promise<ethers.Transaction> {
-        return this.contract.connect(signer).unpause(credentials)
     }
 
     async createCredentialsForTransfer(
@@ -443,15 +338,6 @@ export class Shield {
             to,
             amount,
         ])
-    }
-
-    async transfer(
-        signer: ethers.Signer,
-        to: string,
-        amount: number,
-        credentials: Credentials
-    ): Promise<ethers.Transaction> {
-        return this.contract.connect(signer).transfer(to, amount, credentials)
     }
 
     async burnCredentials(
@@ -492,31 +378,10 @@ export class Shield {
             credentials.call,
             full
         )
-        let func, args
-        if (credentials.to in this.abis) {
-            func = this.abis[credentials.to].getFunction(sig).name
-            const nullCredentials = ethers.utils.hexStripZeros(
-                ethers.utils.defaultAbiCoder.encode(
-                    ['tuple(address, uint, bytes, bytes[])'],
-                    [
-                        [
-                            ethers.constants.AddressZero,
-                            0,
-                            ethers.constants.HashZero,
-                            [],
-                        ],
-                    ]
-                )
-            )
-            args = this.abis[credentials.to].decodeFunctionData(
-                func,
-                ethers.utils.hexConcat([credentials.call, nullCredentials])
-            )
-            args = args.slice(0, -1)
-        } else {
-            func = sig
-            args = [credentials.call.slice(10)]
-        }
+        const { func, args } =
+            credentials.to in this.abis
+                ? decodeCallData(credentials.call, this.abis[credentials.to])
+                : { func: sig, args: [credentials.call.slice(10)] }
         return {
             chainid: credentials.chainid,
             timestamp: credentials.timestamp,
@@ -525,5 +390,12 @@ export class Shield {
             args,
             approvals: signers,
         }
+    }
+
+    async executeCredentials(
+        signer: ethers.Signer,
+        credentials: Credentials
+    ): Promise<ethers.Transaction> {
+        return executeCredentials(signer, credentials, this.contract.interface)
     }
 }

@@ -1,6 +1,7 @@
 export type Credentials = {
+    timestamp: number;
+    chainid: number;
     to: string;
     call: string;
-    timestamp: number;
     approvals: string[];
 };

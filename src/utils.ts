@@ -1,4 +1,51 @@
-import { utils } from 'ethers'
+import { Signer, constants, utils } from 'ethers'
+
+export function signData(signer: Signer, types: string[], values: any[]) {
+    let message = utils.arrayify(
+        utils.keccak256(utils.defaultAbiCoder.encode(types, values))
+    )
+    return signer.signMessage(message)
+}
+
+export function getSigner(types: string[], values: any[], signature: string) {
+    let message = utils.arrayify(
+        utils.keccak256(utils.defaultAbiCoder.encode(types, values))
+    )
+    return utils.verifyMessage(message, signature)
+}
+
+function getNullCredential() {
+    return {
+        timestamp: 0,
+        chainid: 0,
+        to: constants.AddressZero,
+        call: constants.HashZero,
+        approvals: [],
+    }
+}
+
+function getNullCredentialEncoded() {
+    return utils.defaultAbiCoder.encode(
+        ['uint', 'uint', 'address', 'bytes', 'bytes[]'],
+        [0, 0, constants.AddressZero, constants.HashZero, []]
+    )
+}
+
+export function encodeCallData(func, args, iface) {
+    const call = iface.encodeFunctionData(func, [...args, getNullCredential()])
+    return call.slice(0, call.length - (getNullCredentialEncoded().length - 2))
+}
+
+export function decodeCallData(call, iface) {
+    const sig = call.slice(0, 10)
+    const func = iface.getFunction(sig).name
+    let args = iface.decodeFunctionData(
+        func,
+        utils.hexConcat([call, getNullCredentialEncoded()])
+    )
+    args = args.slice(0, -1)
+    return { func, args }
+}
 
 // https://stackoverflow.com/questions/69721296/how-to-encode-integer-to-uint8array-and-back-to-integer-in-javascript
 function bytesToNumber(bytes: number | utils.BytesLike | utils.Hexable) {
