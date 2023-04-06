@@ -9,6 +9,14 @@ import {
 } from './utils'
 import { Credentials } from './types'
 
+import {
+    getShieldCreated,
+    getUserAdded,
+    getUserSet,
+    getPolicyAdded,
+    getPolicyAssigned,
+} from './events'
+
 import CONFIG from './config.json'
 import SHIELD from '../artifacts/contracts/Shield.sol/Shield.json'
 import FACTORY from '../artifacts/contracts/ShieldFactory.sol/ShieldFactory.json'
@@ -96,29 +104,22 @@ export async function getShieldName(
     address: string,
     factory: ethers.Contract
 ): Promise<string> {
-    let events = await factory.queryFilter('ShieldCreated', 0, 'latest')
-    for (let event of events) {
-        const [_, addr, name] = event.args
-        if (address == addr) {
-            return ethers.utils.parseBytes32String(name)
-        }
+    let shields = await getShieldCreated(factory, 0, 'latest')
+    if (!(address in shields)) {
+        throw new Error(`cannot find a shield deployed at ${address}`)
     }
-    throw new Error(`cannot find a shield deployed at ${address}`)
+    return shields[address]
 }
 
 export async function getShields(
     address: string,
     factory: ethers.Contract
 ): Promise<string[]> {
-    let events = await factory.queryFilter('UserAdded', 0, 'latest')
-    const shields = new Set<string>()
-    events.forEach(function (event) {
-        const [shield, user] = event.args
-        if (user === address) {
-            shields.add(shield)
-        }
-    })
-    return Array.from(shields)
+    let users = await getUserAdded(factory, 0, 'latest')
+    if (!(address in users)) {
+        return []
+    }
+    return Array.from(users[address])
 }
 
 export async function createShield(
@@ -189,16 +190,8 @@ export class Shield {
     }
 
     async getUsers(): Promise<{ [address: string]: string[] }> {
-        let events = await this.contract.queryFilter('UserSet', 0, 'latest')
         const roles = await this.contract.getRoles()
-        const users = {}
-        for (let event of events) {
-            const [user, bits] = event.args
-            users[user] = getRolesFromBytes(bits, roles).map(
-                ethers.utils.parseBytes32String
-            )
-        }
-        return users
+        return getUserSet(this.contract, 0, 'latest', roles)
     }
 
     async getUser(address: string): Promise<string[]> {
@@ -226,20 +219,8 @@ export class Shield {
     }
 
     async getPolicies(): Promise<{ [label: string]: string[][] }> {
-        let events = await this.contract.queryFilter('PolicyAdded', 0, 'latest')
         const roles = await this.contract.getRoles()
-        const policies = {}
-        for (let event of events) {
-            const [label, policy] = event.args
-            const decodedLabel = ethers.utils.parseBytes32String(label)
-            const decodedPolicy = policy.map(function (bits: any) {
-                return getRolesFromBytes(bits, roles).map(
-                    ethers.utils.parseBytes32String
-                )
-            })
-            policies[decodedLabel] = decodedPolicy
-        }
-        return policies
+        return getPolicyAdded(this.contract, 0, 'latest', roles)
     }
 
     async getPolicy(label: string): Promise<string[][]> {
@@ -276,21 +257,17 @@ export class Shield {
     async getAssignedPolicies(): Promise<{
         [address: string]: { [func: string]: string }
     }> {
-        let events = await this.contract.queryFilter(
-            'PolicyAssigned',
-            0,
-            'latest'
-        )
+        const addresses = await getPolicyAssigned(this.contract, 0, 'latest')
         const assignments = {}
-        for (let event of events) {
-            const [to, sig, label] = event.args
-            if (!(to in assignments)) {
-                assignments[to] = {}
+        for (let address in addresses) {
+            assignments[address] = {}
+            for (let sig in addresses[address]) {
+                const f =
+                    address in this.abis
+                        ? this.abis[address].getFunction(sig).name
+                        : sig
+                assignments[address][f] = addresses[address][sig]
             }
-            const decodedLabel = ethers.utils.parseBytes32String(label)
-            const f =
-                to in this.abis ? this.abis[to].getFunction(sig).name : sig
-            assignments[to][f] = decodedLabel
         }
         return assignments
     }
