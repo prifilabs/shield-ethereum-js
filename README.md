@@ -24,7 +24,7 @@ The version 0.1 of the Shield is totally **unsecured**. It is still work in prog
 -   `createCredentialsForAddRoles(signer: ethers.Signer, roles: string[]): Promise<Credentials>`
 -   `getUsers(): Promise<{[address: string]: string[]}>`
 -   `getUser(address: string): Promise<string[]>`
--   `createCredentialsForSetUser(signer: ethers.Signer, address: any, roles: string[]): Promise<Credentials>`
+-   `createCredentialsForSetUsers(signer: ethers.Signer, users: Array<{ address: string; roles: string[] }>): Promise<Credentials>`
 -   `getPolicies(): Promise<{[label: string]: string[][]}>`
 -   `getPolicy(label: string): Promise<string[][]>`
 -   `createCredentialsForAddPolicy(signer: ethers.Signer, label: string, policy: string[][]): Promise<Credentials>`
