@@ -1,6 +1,6 @@
 {
     "name": "@prifilabs/shield-ethereum-js",
-    "version": "0.3.1",
+    "version": "0.3.2",
     "description": "The Shield - customizable smart contract protection",
     "main": "lib/src/index.js",
     "scripts": {
@@ -20,6 +20,7 @@
     },
     "homepage": "https://github.com/prifilabs/shield-ethereum-js#readme",
     "devDependencies": {
+        "@ethersproject/providers": "^5.7.2",
         "@nomicfoundation/hardhat-toolbox": "^2.0.2",
         "@nomiclabs/hardhat-etherscan": "^3.1.7",
         "@types/node": "^18.14.6",

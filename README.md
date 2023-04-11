@@ -14,8 +14,7 @@ The version 0.1 of the Shield is totally **unsecured**. It is still work in prog
 -   `executeCredentials(signer: ethers.Signer, credentials: Credentials, iface: ethers.utils.Interface, options?)` execute the credentials
 -   `createShield(signer: ethers.Signer, name: string, roles: any[], users: any[], policy: any[], factory: ethers.Contract): Promise<{receipt: ethers.Transaction, shield: Shield}>`: deploys a shield and returns the corresponding shield object (see below)
 -   `instantiateShield(signer: ethers.Signer, address: string): Promise<Shield>`: returns a shield object (see below) of an existing deployed shield at `address`
--   `getShields(signer: ethers.Signer, factory: ethers.Contract): Promise<string[]>`: returns the list of shield's addresses for which the user `address` is one of the users
--   `function getShieldName(address: string, factory: ethers.Contract): Promise<string>`: returns the name of a Shield
+-   `getShields(signer: ethers.Signer, factory: ethers.Contract): Promise<{ [address: string]: string }>`: returns the list of shield's addresses for which the user `address` is one of the users
 
 ### Methods of the `Shield` object
 

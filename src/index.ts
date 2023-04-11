@@ -1,4 +1,6 @@
 import { ethers } from 'ethers'
+import { TransactionResponse } from '@ethersproject/providers'
+
 import {
     getBytesFromRoles,
     getRolesFromBytes,
@@ -11,7 +13,7 @@ import { Credentials } from './types'
 
 import {
     getShieldCreated,
-    getUserSet,
+    getUsersSet,
     getPolicyAdded,
     getPolicyAssigned,
 } from './events'
@@ -90,7 +92,7 @@ export function executeCredentials(
     credentials: Credentials,
     iface: ethers.utils.Interface,
     options?
-): Promise<ethers.Transaction> {
+): Promise<TransactionResponse> {
     if (typeof options === 'undefined') {
         options = {}
     }
@@ -99,28 +101,21 @@ export function executeCredentials(
     return contract[func].apply(this, [...args, credentials], options)
 }
 
-export async function getShieldName(
-    address: string,
-    factory: ethers.Contract
-): Promise<string> {
-    let shields = await getShieldCreated(factory, 0, 'latest')
-    if (!(address in shields)) {
-        throw new Error(`cannot find a shield deployed at ${address}`)
-    }
-    return shields[address]
-}
-
 export async function getShields(
     signer: ethers.Signer,
     factory: ethers.Contract
-): Promise<string[]> {
-    let shields = await getShieldCreated(factory, 0, 'latest')
-    return Object.keys(shields).filter(async function (shield) {
-        let contract = new ethers.Contract(shield, SHIELD_INTERFACE, signer)
+): Promise<{ [address: string]: string }> {
+    let candidates = await getShieldCreated(factory, 0, 'latest')
+    let shields = {}
+    for (let address in candidates) {
+        let contract = new ethers.Contract(address, SHIELD_INTERFACE, signer)
         let roles = await contract.getRoles()
-        let users = await getUserSet(contract, 0, 'latest', roles)
-        return (await signer.getAddress()) in users
-    })
+        let users = await getUsersSet(contract, 0, 'latest', roles)
+        if ((await signer.getAddress()) in users) {
+            shields[address] = candidates[address]
+        }
+    }
+    return shields
 }
 
 export async function createShield(
@@ -130,7 +125,7 @@ export async function createShield(
     users: any[],
     policy: any[],
     factory: ethers.Contract
-): Promise<{ tx: ethers.Transaction; shield: Shield }> {
+): Promise<{ tx: TransactionResponse; shield: Shield }> {
     const _name = ethers.utils.formatBytes32String(name)
     const _roles = roles.map(ethers.utils.formatBytes32String)
     const _users = users.map(function (user: { roles: string[]; addr: any }) {
@@ -192,7 +187,7 @@ export class Shield {
 
     async getUsers(): Promise<{ [address: string]: string[] }> {
         const roles = await this.contract.getRoles()
-        return getUserSet(this.contract, 0, 'latest', roles)
+        return getUsersSet(this.contract, 0, 'latest', roles)
     }
 
     async getUser(address: string): Promise<string[]> {
@@ -335,7 +330,7 @@ export class Shield {
     async burnCredentials(
         signer: ethers.Signer,
         credentials: Credentials
-    ): Promise<ethers.Transaction> {
+    ): Promise<TransactionResponse> {
         return this.contract.connect(signer).burnCredentials(credentials)
     }
 
@@ -387,7 +382,7 @@ export class Shield {
     async executeCredentials(
         signer: ethers.Signer,
         credentials: Credentials
-    ): Promise<ethers.Transaction> {
+    ): Promise<TransactionResponse> {
         return executeCredentials(signer, credentials, this.contract.interface)
     }
 

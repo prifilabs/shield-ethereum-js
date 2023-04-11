@@ -21,7 +21,7 @@ export async function getRolesAdded(shield, first, last) {
     return roles
 }
 
-export async function getUserSet(shield, first, last, roles) {
+export async function getUsersSet(shield, first, last, roles) {
     let events = await shield.queryFilter('UsersSet', first, last)
     const users = {}
     for (let event of events) {
