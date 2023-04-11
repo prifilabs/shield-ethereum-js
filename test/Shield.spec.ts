@@ -118,7 +118,7 @@ describe('Shield', function () {
             const { shield, alice } = context
             // for (let f of [
             //     'addRoles',
-            //     'setUser',
+            //     'setUsers',
             //     'addPolicy',
             //     'assignPolicy',
             //     'pause',
@@ -131,7 +131,7 @@ describe('Shield', function () {
             expect(assignments).to.have.property(shield.contract.address)
             for (let f of [
                 'addRoles',
-                'setUser',
+                'setUsers',
                 'addPolicy',
                 'assignPolicy',
                 'pause',
@@ -149,7 +149,7 @@ describe('Shield', function () {
             const { shield, alice } = context
             for (let f of [
                 'addRoles',
-                'setUser',
+                'setUsers',
                 'addPolicy',
                 'assignPolicy',
                 'pause',
@@ -187,10 +187,9 @@ describe('Shield', function () {
         it('Should set a user', async function () {
             const { shield, alice, bob } = context
             const roles = ['employee', 'engineer']
-            const credentials = await shield.createCredentialsForSetUser(
+            const credentials = await shield.createCredentialsForSetUsers(
                 alice,
-                bob.address,
-                roles
+                [{ address: bob.address, roles }]
             )
             await shield.executeCredentials(alice, credentials)
             expect(await shield.getUser(bob.address)).to.have.members(roles)
@@ -328,7 +327,9 @@ describe('Shield', function () {
         it('Should burn a credential', async function () {
             const { shield, alice } = context
             const credentials = await shield.createCredentialsForPause(alice)
+            expect(await shield.isBurnt(alice, credentials)).to.be.false
             await shield.burnCredentials(alice, credentials)
+            expect(await shield.isBurnt(alice, credentials)).to.be.true
             await expect(
                 shield.executeCredentials(alice, credentials)
             ).to.be.revertedWithCustomError(
@@ -402,10 +403,9 @@ describe('Shield', function () {
 
         it('Should reject if approvals is empty', async function () {
             const { shield, alice, bob } = context
-            const credentials = await shield.createCredentialsForSetUser(
+            const credentials = await shield.createCredentialsForSetUsers(
                 alice,
-                bob.address,
-                []
+                [{ address: bob.address, roles: [] }]
             )
             credentials.approvals = []
             await expect(

@@ -7,7 +7,7 @@ export declare function encodeCredentials(credentials: Credentials): string;
 export declare function decodeCredentials(encodedCredentials: string): Credentials;
 export declare function executeCredentials(signer: ethers.Signer, credentials: Credentials, iface: ethers.utils.Interface, options?: any): Promise<ethers.Transaction>;
 export declare function getShieldName(address: string, factory: ethers.Contract): Promise<string>;
-export declare function getShields(address: string, factory: ethers.Contract): Promise<string[]>;
+export declare function getShields(signer: ethers.Signer, factory: ethers.Contract): Promise<string[]>;
 export declare function createShield(signer: ethers.Signer, name: string, roles: any[], users: any[], policy: any[], factory: ethers.Contract): Promise<{
     tx: ethers.Transaction;
     shield: Shield;
@@ -26,7 +26,10 @@ export declare class Shield {
         [address: string]: string[];
     }>;
     getUser(address: string): Promise<string[]>;
-    createCredentialsForSetUser(signer: ethers.Signer, address: any, roles: string[]): Promise<Credentials>;
+    createCredentialsForSetUsers(signer: ethers.Signer, users: Array<{
+        address: string;
+        roles: string[];
+    }>): Promise<Credentials>;
     getPolicies(): Promise<{
         [label: string]: string[][];
     }>;
@@ -53,4 +56,5 @@ export declare class Shield {
         approvals: string[];
     }>;
     executeCredentials(signer: ethers.Signer, credentials: Credentials): Promise<ethers.Transaction>;
+    isBurnt(signer: ethers.Signer, credentials: Credentials): Promise<boolean>;
 }

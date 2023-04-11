@@ -11,7 +11,6 @@ import { Credentials } from './types'
 
 import {
     getShieldCreated,
-    getUserAdded,
     getUserSet,
     getPolicyAdded,
     getPolicyAssigned,
@@ -112,14 +111,16 @@ export async function getShieldName(
 }
 
 export async function getShields(
-    address: string,
+    signer: ethers.Signer,
     factory: ethers.Contract
 ): Promise<string[]> {
-    let users = await getUserAdded(factory, 0, 'latest')
-    if (!(address in users)) {
-        return []
-    }
-    return Array.from(users[address])
+    let shields = await getShieldCreated(factory, 0, 'latest')
+    return Object.keys(shields).filter(async function (shield) {
+        let contract = new ethers.Contract(shield, SHIELD_INTERFACE, signer)
+        let roles = await contract.getRoles()
+        let users = await getUserSet(contract, 0, 'latest', roles)
+        return (await signer.getAddress()) in users
+    })
 }
 
 export async function createShield(
@@ -202,20 +203,20 @@ export class Shield {
         )
     }
 
-    async createCredentialsForSetUser(
+    async createCredentialsForSetUsers(
         signer: ethers.Signer,
-        address: any,
-        roles: string[]
+        users: Array<{ address: string; roles: string[] }>
     ): Promise<Credentials> {
         const existingRoles = await this.contract.getRoles()
-        const newRoles = getBytesFromRoles(
-            roles.map(ethers.utils.formatBytes32String),
-            existingRoles
-        )
-        return createCredentials(signer, this.contract, 'setUser', [
-            address,
-            newRoles,
-        ])
+        const newUsers = []
+        for (let user of users) {
+            const newRoles = getBytesFromRoles(
+                user.roles.map(ethers.utils.formatBytes32String),
+                existingRoles
+            )
+            newUsers.push({ addr: user.address, roles: newRoles })
+        }
+        return createCredentials(signer, this.contract, 'setUsers', [newUsers])
     }
 
     async getPolicies(): Promise<{ [label: string]: string[][] }> {
@@ -388,5 +389,17 @@ export class Shield {
         credentials: Credentials
     ): Promise<ethers.Transaction> {
         return executeCredentials(signer, credentials, this.contract.interface)
+    }
+
+    async isBurnt(
+        signer: ethers.Signer,
+        credentials: Credentials
+    ): Promise<boolean> {
+        const contract = new ethers.Contract(
+            credentials.to,
+            this.abis[credentials.to],
+            signer
+        )
+        return contract.burns(ethers.utils.keccak256(credentials.approvals[0]))
     }
 }

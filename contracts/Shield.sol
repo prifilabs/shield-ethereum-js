@@ -23,7 +23,7 @@ struct User {
 
 abstract contract Shieldable {
     Shield internal shield;
-    mapping(bytes32 => bool) internal burns;
+    mapping(bytes32 => bool) public burns;
 
     event ShieldableDeployed(address shieldable, address shield);
 
@@ -55,7 +55,6 @@ abstract contract Shieldable {
 }
 
 contract Shield is Shieldable, Initializable, ReentrancyGuard {
-    ShieldFactory private factory;
     bool public paused;
     bytes32[] internal roles;
     mapping(address => bytes8) internal users;
@@ -63,7 +62,7 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
     mapping(address => mapping(bytes4 => bytes32)) internal assignments;
 
     event RolesAdded(bytes32[] roles);
-    event UserSet(address user, bytes8 roles);
+    event UsersSet(User[] users);
     event PolicyAdded(bytes32 indexed label, bytes8[] policy);
     event PolicyAssigned(address indexed to, bytes4 sig, bytes32 indexed label);
     event Paused();
@@ -76,27 +75,22 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
     }
 
     function initialize(
-        ShieldFactory _factory,
         bytes32[] calldata _roles,
         User[] calldata _users,
         bytes8[] calldata policy
     ) public initializer {
-        factory = _factory;
         shield = this;
         if (_roles.length > 64)
             revert ShieldError('The Shield cannot have more than 64 roles');
         roles = _roles;
         emit RolesAdded(_roles);
 
-        for (uint i = 0; i < _users.length; i++) {
-            User memory user = _users[i];
-            _setUser(user.addr, user.roles);
-        }
+        _setUsers(_users);
 
         // auto-administration
         _addPolicy('admin-policy', policy);
         _assignPolicy(address(this), 0x11d5776e, 'admin-policy');
-        _assignPolicy(address(this), 0xf4163a2d, 'admin-policy');
+        _assignPolicy(address(this), 0x8b2c0edd, 'admin-policy');
         _assignPolicy(address(this), 0x91525691, 'admin-policy');
         _assignPolicy(address(this), 0x24877e58, 'admin-policy');
         _assignPolicy(address(this), 0x8441e0af, 'admin-policy');
@@ -123,23 +117,22 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
         return bytes8(0xffffffffffffffff) >> (64 - roles.length);
     }
 
-    function _setUser(address addr, bytes8 _roles) private {
+    function _setUsers(User[] memory _users) private {
         bytes8 mask = _getMask();
-        _roles = _roles & mask;
-        if (users[addr] == bytes8(0)) {
-            factory.addUser(address(this), addr);
+        for (uint i = 0; i < _users.length; i++) {
+            User memory user = _users[i];
+            user.roles = user.roles & mask;
+            users[user.addr] = user.roles;
         }
-        users[addr] = _roles;
-        emit UserSet(addr, _roles);
+        emit UsersSet(_users);
     }
 
     // If you change the signature of this function, do not forget to update the function signature in the function 'initialize'
-    function setUser(
-        address addr,
-        bytes8 _roles,
+    function setUsers(
+        User[] memory _users,
         Credentials calldata credentials
     ) public checkCredentials(credentials) {
-        _setUser(addr, _roles);
+        _setUsers(_users);
     }
 
     function getUser(address user) public view returns (bytes8) {

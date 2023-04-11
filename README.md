@@ -14,7 +14,7 @@ The version 0.1 of the Shield is totally **unsecured**. It is still work in prog
 -   `executeCredentials(signer: ethers.Signer, credentials: Credentials, iface: ethers.utils.Interface, options?)` execute the credentials
 -   `createShield(signer: ethers.Signer, name: string, roles: any[], users: any[], policy: any[], factory: ethers.Contract): Promise<{receipt: ethers.Transaction, shield: Shield}>`: deploys a shield and returns the corresponding shield object (see below)
 -   `instantiateShield(signer: ethers.Signer, address: string): Promise<Shield>`: returns a shield object (see below) of an existing deployed shield at `address`
--   `getShields(address: string, factory: ethers.Contract): Promise<string[]>`: returns the list of shield's addresses for which the user `address` is one of the users
+-   `getShields(signer: ethers.Signer, factory: ethers.Contract): Promise<string[]>`: returns the list of shield's addresses for which the user `address` is one of the users
 -   `function getShieldName(address: string, factory: ethers.Contract): Promise<string>`: returns the name of a Shield
 
 ### Methods of the `Shield` object
@@ -38,3 +38,4 @@ The version 0.1 of the Shield is totally **unsecured**. It is still work in prog
 -   `burnCredentials(signer: ethers.Signer, credentials: Credentials): Promise<ethers.Transaction>`
 -   `checkCredentials(credentials: Credentials, full?: boolean):Promise<{to: string, func: string, args:any[], timestamp:number, approvals: string[]}>`
 -   `executeCredentials(signer: ethers.Signer, credentials: Credentials): Promise<ethers.Transaction>`
+-   `isBurnt(signer: ethers.Signer, credentials: Credentials):Promise<boolean>`

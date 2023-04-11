@@ -40,6 +40,25 @@ const _abi = [
     name: "ShieldableDeployed",
     type: "event",
   },
+  {
+    inputs: [
+      {
+        internalType: "bytes32",
+        name: "",
+        type: "bytes32",
+      },
+    ],
+    name: "burns",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
 ] as const;
 
 export class Shieldable__factory {

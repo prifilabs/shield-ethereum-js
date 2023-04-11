@@ -8,13 +8,7 @@ import './Shield.sol';
 contract ShieldFactory {
     address immutable shieldImpl;
 
-    event ShieldCreated(
-        address creator,
-        address indexed shield,
-        bytes32 name
-    );
-    
-    event UserAdded(address shield, address user);
+    event ShieldCreated(address creator, address indexed shield, bytes32 name);
 
     constructor() {
         shieldImpl = address(new Shield());
@@ -29,11 +23,7 @@ contract ShieldFactory {
         // https://github.com/OpenZeppelin/workshops/blob/master/02-contracts-clone/contracts/1-ERC20/FactoryClone.sol
         // https://ethereum.stackexchange.com/a/97123/115147
         address payable clone = payable(Clones.clone(shieldImpl));
-        Shield(clone).initialize(this, roles, users, policy);
+        Shield(clone).initialize(roles, users, policy);
         emit ShieldCreated(msg.sender, clone, name);
-    }
-    
-    function addUser(address shield, address user) public {
-        emit UserAdded(shield, user);
     }
 }

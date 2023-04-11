@@ -38,18 +38,11 @@ export type UserStructOutput = [string, string] & {
 
 export interface ShieldFactoryInterface extends utils.Interface {
   functions: {
-    "addUser(address,address)": FunctionFragment;
     "createShield(bytes32,bytes32[],(address,bytes8)[],bytes8[])": FunctionFragment;
   };
 
-  getFunction(
-    nameOrSignatureOrTopic: "addUser" | "createShield"
-  ): FunctionFragment;
+  getFunction(nameOrSignatureOrTopic: "createShield"): FunctionFragment;
 
-  encodeFunctionData(
-    functionFragment: "addUser",
-    values: [PromiseOrValue<string>, PromiseOrValue<string>]
-  ): string;
   encodeFunctionData(
     functionFragment: "createShield",
     values: [
@@ -60,7 +53,6 @@ export interface ShieldFactoryInterface extends utils.Interface {
     ]
   ): string;
 
-  decodeFunctionResult(functionFragment: "addUser", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "createShield",
     data: BytesLike
@@ -68,11 +60,9 @@ export interface ShieldFactoryInterface extends utils.Interface {
 
   events: {
     "ShieldCreated(address,address,bytes32)": EventFragment;
-    "UserAdded(address,address)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "ShieldCreated"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "UserAdded"): EventFragment;
 }
 
 export interface ShieldCreatedEventObject {
@@ -86,14 +76,6 @@ export type ShieldCreatedEvent = TypedEvent<
 >;
 
 export type ShieldCreatedEventFilter = TypedEventFilter<ShieldCreatedEvent>;
-
-export interface UserAddedEventObject {
-  shield: string;
-  user: string;
-}
-export type UserAddedEvent = TypedEvent<[string, string], UserAddedEventObject>;
-
-export type UserAddedEventFilter = TypedEventFilter<UserAddedEvent>;
 
 export interface ShieldFactory extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
@@ -122,12 +104,6 @@ export interface ShieldFactory extends BaseContract {
   removeListener: OnEvent<this>;
 
   functions: {
-    addUser(
-      shield: PromiseOrValue<string>,
-      user: PromiseOrValue<string>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<ContractTransaction>;
-
     createShield(
       name: PromiseOrValue<BytesLike>,
       roles: PromiseOrValue<BytesLike>[],
@@ -136,12 +112,6 @@ export interface ShieldFactory extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
   };
-
-  addUser(
-    shield: PromiseOrValue<string>,
-    user: PromiseOrValue<string>,
-    overrides?: Overrides & { from?: PromiseOrValue<string> }
-  ): Promise<ContractTransaction>;
 
   createShield(
     name: PromiseOrValue<BytesLike>,
@@ -152,12 +122,6 @@ export interface ShieldFactory extends BaseContract {
   ): Promise<ContractTransaction>;
 
   callStatic: {
-    addUser(
-      shield: PromiseOrValue<string>,
-      user: PromiseOrValue<string>,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
     createShield(
       name: PromiseOrValue<BytesLike>,
       roles: PromiseOrValue<BytesLike>[],
@@ -178,21 +142,9 @@ export interface ShieldFactory extends BaseContract {
       shield?: PromiseOrValue<string> | null,
       name?: null
     ): ShieldCreatedEventFilter;
-
-    "UserAdded(address,address)"(
-      shield?: null,
-      user?: null
-    ): UserAddedEventFilter;
-    UserAdded(shield?: null, user?: null): UserAddedEventFilter;
   };
 
   estimateGas: {
-    addUser(
-      shield: PromiseOrValue<string>,
-      user: PromiseOrValue<string>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<BigNumber>;
-
     createShield(
       name: PromiseOrValue<BytesLike>,
       roles: PromiseOrValue<BytesLike>[],
@@ -203,12 +155,6 @@ export interface ShieldFactory extends BaseContract {
   };
 
   populateTransaction: {
-    addUser(
-      shield: PromiseOrValue<string>,
-      user: PromiseOrValue<string>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<PopulatedTransaction>;
-
     createShield(
       name: PromiseOrValue<BytesLike>,
       roles: PromiseOrValue<BytesLike>[],

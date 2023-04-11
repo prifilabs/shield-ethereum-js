@@ -1,3 +1,4 @@
+import { ethers } from 'ethers'
 import { getRolesFromBytes } from './utils'
 
 export async function getShieldCreated(factory, first, last) {
@@ -8,19 +9,6 @@ export async function getShieldCreated(factory, first, last) {
         shields[addr] = ethers.utils.parseBytes32String(name)
     }
     return shields
-}
-
-export async function getUserAdded(factory, first, last) {
-    let events = await factory.queryFilter('UserAdded', first, last)
-    const users = {}
-    for (let event of events) {
-        const [shield, user] = event.args
-        if (!(user in users)) {
-            users[user] = new Set<string>()
-        }
-        users[user].add(shield)
-    }
-    return users
 }
 
 export async function getRolesAdded(shield, first, last) {
@@ -34,13 +22,16 @@ export async function getRolesAdded(shield, first, last) {
 }
 
 export async function getUserSet(shield, first, last, roles) {
-    let events = await shield.queryFilter('UserSet', first, last)
+    let events = await shield.queryFilter('UsersSet', first, last)
     const users = {}
     for (let event of events) {
-        const [user, bits] = event.args
-        users[user] = getRolesFromBytes(bits, roles).map(
-            ethers.utils.parseBytes32String
-        )
+        const [_users] = event.args
+        for (let user of _users) {
+            const [addr, bits] = user
+            users[addr] = getRolesFromBytes(bits, roles).map(
+                ethers.utils.parseBytes32String
+            )
+        }
     }
     return users
 }

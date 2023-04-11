@@ -28,6 +28,16 @@ import type {
   PromiseOrValue,
 } from "../../common";
 
+export type UserStruct = {
+  addr: PromiseOrValue<string>;
+  roles: PromiseOrValue<BytesLike>;
+};
+
+export type UserStructOutput = [string, string] & {
+  addr: string;
+  roles: string;
+};
+
 export type CredentialsStruct = {
   timestamp: PromiseOrValue<BigNumberish>;
   chainid: PromiseOrValue<BigNumberish>;
@@ -50,30 +60,21 @@ export type CredentialsStructOutput = [
   approvals: string[];
 };
 
-export type UserStruct = {
-  addr: PromiseOrValue<string>;
-  roles: PromiseOrValue<BytesLike>;
-};
-
-export type UserStructOutput = [string, string] & {
-  addr: string;
-  roles: string;
-};
-
 export interface ShieldInterface extends utils.Interface {
   functions: {
     "addPolicy(bytes32,bytes8[],(uint256,uint256,address,bytes,bytes[]))": FunctionFragment;
     "addRoles(bytes32[],(uint256,uint256,address,bytes,bytes[]))": FunctionFragment;
     "assignPolicy(address,bytes4,bytes32,(uint256,uint256,address,bytes,bytes[]))": FunctionFragment;
     "burnCredentials((uint256,uint256,address,bytes,bytes[]))": FunctionFragment;
+    "burns(bytes32)": FunctionFragment;
     "getAssignedPolicy(address,bytes4)": FunctionFragment;
     "getPolicy(bytes32)": FunctionFragment;
     "getRoles()": FunctionFragment;
     "getUser(address)": FunctionFragment;
-    "initialize(address,bytes32[],(address,bytes8)[],bytes8[])": FunctionFragment;
+    "initialize(bytes32[],(address,bytes8)[],bytes8[])": FunctionFragment;
     "pause((uint256,uint256,address,bytes,bytes[]))": FunctionFragment;
     "paused()": FunctionFragment;
-    "setUser(address,bytes8,(uint256,uint256,address,bytes,bytes[]))": FunctionFragment;
+    "setUsers((address,bytes8)[],(uint256,uint256,address,bytes,bytes[]))": FunctionFragment;
     "transfer(address,uint256,(uint256,uint256,address,bytes,bytes[]))": FunctionFragment;
     "unpause((uint256,uint256,address,bytes,bytes[]))": FunctionFragment;
     "validateCredentials((uint256,uint256,address,bytes,bytes[]),address,address,bytes4,bytes,bool)": FunctionFragment;
@@ -85,6 +86,7 @@ export interface ShieldInterface extends utils.Interface {
       | "addRoles"
       | "assignPolicy"
       | "burnCredentials"
+      | "burns"
       | "getAssignedPolicy"
       | "getPolicy"
       | "getRoles"
@@ -92,7 +94,7 @@ export interface ShieldInterface extends utils.Interface {
       | "initialize"
       | "pause"
       | "paused"
-      | "setUser"
+      | "setUsers"
       | "transfer"
       | "unpause"
       | "validateCredentials"
@@ -124,6 +126,10 @@ export interface ShieldInterface extends utils.Interface {
     values: [CredentialsStruct]
   ): string;
   encodeFunctionData(
+    functionFragment: "burns",
+    values: [PromiseOrValue<BytesLike>]
+  ): string;
+  encodeFunctionData(
     functionFragment: "getAssignedPolicy",
     values: [PromiseOrValue<string>, PromiseOrValue<BytesLike>]
   ): string;
@@ -139,7 +145,6 @@ export interface ShieldInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "initialize",
     values: [
-      PromiseOrValue<string>,
       PromiseOrValue<BytesLike>[],
       UserStruct[],
       PromiseOrValue<BytesLike>[]
@@ -151,12 +156,8 @@ export interface ShieldInterface extends utils.Interface {
   ): string;
   encodeFunctionData(functionFragment: "paused", values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "setUser",
-    values: [
-      PromiseOrValue<string>,
-      PromiseOrValue<BytesLike>,
-      CredentialsStruct
-    ]
+    functionFragment: "setUsers",
+    values: [UserStruct[], CredentialsStruct]
   ): string;
   encodeFunctionData(
     functionFragment: "transfer",
@@ -192,6 +193,7 @@ export interface ShieldInterface extends utils.Interface {
     functionFragment: "burnCredentials",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "burns", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "getAssignedPolicy",
     data: BytesLike
@@ -202,7 +204,7 @@ export interface ShieldInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "pause", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "paused", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "setUser", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "setUsers", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "transfer", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "unpause", data: BytesLike): Result;
   decodeFunctionResult(
@@ -218,7 +220,7 @@ export interface ShieldInterface extends utils.Interface {
     "RolesAdded(bytes32[])": EventFragment;
     "ShieldableDeployed(address,address)": EventFragment;
     "Unpaused()": EventFragment;
-    "UserSet(address,bytes8)": EventFragment;
+    "UsersSet(tuple[])": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "Initialized"): EventFragment;
@@ -228,7 +230,7 @@ export interface ShieldInterface extends utils.Interface {
   getEvent(nameOrSignatureOrTopic: "RolesAdded"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "ShieldableDeployed"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Unpaused"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "UserSet"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "UsersSet"): EventFragment;
 }
 
 export interface InitializedEventObject {
@@ -290,13 +292,15 @@ export type UnpausedEvent = TypedEvent<[], UnpausedEventObject>;
 
 export type UnpausedEventFilter = TypedEventFilter<UnpausedEvent>;
 
-export interface UserSetEventObject {
-  user: string;
-  roles: string;
+export interface UsersSetEventObject {
+  users: UserStructOutput[];
 }
-export type UserSetEvent = TypedEvent<[string, string], UserSetEventObject>;
+export type UsersSetEvent = TypedEvent<
+  [UserStructOutput[]],
+  UsersSetEventObject
+>;
 
-export type UserSetEventFilter = TypedEventFilter<UserSetEvent>;
+export type UsersSetEventFilter = TypedEventFilter<UsersSetEvent>;
 
 export interface Shield extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
@@ -351,6 +355,11 @@ export interface Shield extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
+    burns(
+      arg0: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<[boolean]>;
+
     getAssignedPolicy(
       to: PromiseOrValue<string>,
       sig: PromiseOrValue<BytesLike>,
@@ -370,7 +379,6 @@ export interface Shield extends BaseContract {
     ): Promise<[string]>;
 
     initialize(
-      _factory: PromiseOrValue<string>,
       _roles: PromiseOrValue<BytesLike>[],
       _users: UserStruct[],
       policy: PromiseOrValue<BytesLike>[],
@@ -384,9 +392,8 @@ export interface Shield extends BaseContract {
 
     paused(overrides?: CallOverrides): Promise<[boolean]>;
 
-    setUser(
-      addr: PromiseOrValue<string>,
-      _roles: PromiseOrValue<BytesLike>,
+    setUsers(
+      _users: UserStruct[],
       credentials: CredentialsStruct,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
@@ -440,6 +447,11 @@ export interface Shield extends BaseContract {
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
+  burns(
+    arg0: PromiseOrValue<BytesLike>,
+    overrides?: CallOverrides
+  ): Promise<boolean>;
+
   getAssignedPolicy(
     to: PromiseOrValue<string>,
     sig: PromiseOrValue<BytesLike>,
@@ -459,7 +471,6 @@ export interface Shield extends BaseContract {
   ): Promise<string>;
 
   initialize(
-    _factory: PromiseOrValue<string>,
     _roles: PromiseOrValue<BytesLike>[],
     _users: UserStruct[],
     policy: PromiseOrValue<BytesLike>[],
@@ -473,9 +484,8 @@ export interface Shield extends BaseContract {
 
   paused(overrides?: CallOverrides): Promise<boolean>;
 
-  setUser(
-    addr: PromiseOrValue<string>,
-    _roles: PromiseOrValue<BytesLike>,
+  setUsers(
+    _users: UserStruct[],
     credentials: CredentialsStruct,
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
@@ -529,6 +539,11 @@ export interface Shield extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    burns(
+      arg0: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
+
     getAssignedPolicy(
       to: PromiseOrValue<string>,
       sig: PromiseOrValue<BytesLike>,
@@ -548,7 +563,6 @@ export interface Shield extends BaseContract {
     ): Promise<string>;
 
     initialize(
-      _factory: PromiseOrValue<string>,
       _roles: PromiseOrValue<BytesLike>[],
       _users: UserStruct[],
       policy: PromiseOrValue<BytesLike>[],
@@ -562,9 +576,8 @@ export interface Shield extends BaseContract {
 
     paused(overrides?: CallOverrides): Promise<boolean>;
 
-    setUser(
-      addr: PromiseOrValue<string>,
-      _roles: PromiseOrValue<BytesLike>,
+    setUsers(
+      _users: UserStruct[],
       credentials: CredentialsStruct,
       overrides?: CallOverrides
     ): Promise<void>;
@@ -634,8 +647,8 @@ export interface Shield extends BaseContract {
     "Unpaused()"(): UnpausedEventFilter;
     Unpaused(): UnpausedEventFilter;
 
-    "UserSet(address,bytes8)"(user?: null, roles?: null): UserSetEventFilter;
-    UserSet(user?: null, roles?: null): UserSetEventFilter;
+    "UsersSet(tuple[])"(users?: null): UsersSetEventFilter;
+    UsersSet(users?: null): UsersSetEventFilter;
   };
 
   estimateGas: {
@@ -665,6 +678,11 @@ export interface Shield extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
+    burns(
+      arg0: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     getAssignedPolicy(
       to: PromiseOrValue<string>,
       sig: PromiseOrValue<BytesLike>,
@@ -684,7 +702,6 @@ export interface Shield extends BaseContract {
     ): Promise<BigNumber>;
 
     initialize(
-      _factory: PromiseOrValue<string>,
       _roles: PromiseOrValue<BytesLike>[],
       _users: UserStruct[],
       policy: PromiseOrValue<BytesLike>[],
@@ -698,9 +715,8 @@ export interface Shield extends BaseContract {
 
     paused(overrides?: CallOverrides): Promise<BigNumber>;
 
-    setUser(
-      addr: PromiseOrValue<string>,
-      _roles: PromiseOrValue<BytesLike>,
+    setUsers(
+      _users: UserStruct[],
       credentials: CredentialsStruct,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
@@ -755,6 +771,11 @@ export interface Shield extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 
+    burns(
+      arg0: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     getAssignedPolicy(
       to: PromiseOrValue<string>,
       sig: PromiseOrValue<BytesLike>,
@@ -774,7 +795,6 @@ export interface Shield extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     initialize(
-      _factory: PromiseOrValue<string>,
       _roles: PromiseOrValue<BytesLike>[],
       _users: UserStruct[],
       policy: PromiseOrValue<BytesLike>[],
@@ -788,9 +808,8 @@ export interface Shield extends BaseContract {
 
     paused(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    setUser(
-      addr: PromiseOrValue<string>,
-      _roles: PromiseOrValue<BytesLike>,
+    setUsers(
+      _users: UserStruct[],
       credentials: CredentialsStruct,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
