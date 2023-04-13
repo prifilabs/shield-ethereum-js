@@ -65,12 +65,14 @@ export interface ShieldInterface extends utils.Interface {
     "addPolicy(bytes32,bytes8[],(uint256,uint256,address,bytes,bytes[]))": FunctionFragment;
     "addRoles(bytes32[],(uint256,uint256,address,bytes,bytes[]))": FunctionFragment;
     "assignPolicy(address,bytes4,bytes32,(uint256,uint256,address,bytes,bytes[]))": FunctionFragment;
-    "burnCredentials((uint256,uint256,address,bytes,bytes[]))": FunctionFragment;
-    "burns(bytes32)": FunctionFragment;
+    "cancelCredentials((uint256,uint256,address,bytes,bytes[]))": FunctionFragment;
+    "canceled(bytes32)": FunctionFragment;
+    "executed(bytes32)": FunctionFragment;
     "getAssignedPolicy(address,bytes4)": FunctionFragment;
     "getPolicy(bytes32)": FunctionFragment;
     "getRoles()": FunctionFragment;
     "getUser(address)": FunctionFragment;
+    "hasAnyRoles(address,bytes8)": FunctionFragment;
     "initialize(bytes32[],(address,bytes8)[],bytes8[])": FunctionFragment;
     "pause((uint256,uint256,address,bytes,bytes[]))": FunctionFragment;
     "paused()": FunctionFragment;
@@ -85,12 +87,14 @@ export interface ShieldInterface extends utils.Interface {
       | "addPolicy"
       | "addRoles"
       | "assignPolicy"
-      | "burnCredentials"
-      | "burns"
+      | "cancelCredentials"
+      | "canceled"
+      | "executed"
       | "getAssignedPolicy"
       | "getPolicy"
       | "getRoles"
       | "getUser"
+      | "hasAnyRoles"
       | "initialize"
       | "pause"
       | "paused"
@@ -122,11 +126,15 @@ export interface ShieldInterface extends utils.Interface {
     ]
   ): string;
   encodeFunctionData(
-    functionFragment: "burnCredentials",
+    functionFragment: "cancelCredentials",
     values: [CredentialsStruct]
   ): string;
   encodeFunctionData(
-    functionFragment: "burns",
+    functionFragment: "canceled",
+    values: [PromiseOrValue<BytesLike>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "executed",
     values: [PromiseOrValue<BytesLike>]
   ): string;
   encodeFunctionData(
@@ -141,6 +149,10 @@ export interface ShieldInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "getUser",
     values: [PromiseOrValue<string>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "hasAnyRoles",
+    values: [PromiseOrValue<string>, PromiseOrValue<BytesLike>]
   ): string;
   encodeFunctionData(
     functionFragment: "initialize",
@@ -190,10 +202,11 @@ export interface ShieldInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "burnCredentials",
+    functionFragment: "cancelCredentials",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "burns", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "canceled", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "executed", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "getAssignedPolicy",
     data: BytesLike
@@ -201,6 +214,10 @@ export interface ShieldInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "getPolicy", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "getRoles", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "getUser", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "hasAnyRoles",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "pause", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "paused", data: BytesLike): Result;
@@ -350,12 +367,17 @@ export interface Shield extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
-    burnCredentials(
+    cancelCredentials(
       credentials: CredentialsStruct,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
-    burns(
+    canceled(
+      arg0: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<[boolean]>;
+
+    executed(
       arg0: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<[boolean]>;
@@ -377,6 +399,12 @@ export interface Shield extends BaseContract {
       user: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<[string]>;
+
+    hasAnyRoles(
+      user: PromiseOrValue<string>,
+      _roles: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<[boolean]>;
 
     initialize(
       _roles: PromiseOrValue<BytesLike>[],
@@ -442,12 +470,17 @@ export interface Shield extends BaseContract {
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
-  burnCredentials(
+  cancelCredentials(
     credentials: CredentialsStruct,
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
-  burns(
+  canceled(
+    arg0: PromiseOrValue<BytesLike>,
+    overrides?: CallOverrides
+  ): Promise<boolean>;
+
+  executed(
     arg0: PromiseOrValue<BytesLike>,
     overrides?: CallOverrides
   ): Promise<boolean>;
@@ -469,6 +502,12 @@ export interface Shield extends BaseContract {
     user: PromiseOrValue<string>,
     overrides?: CallOverrides
   ): Promise<string>;
+
+  hasAnyRoles(
+    user: PromiseOrValue<string>,
+    _roles: PromiseOrValue<BytesLike>,
+    overrides?: CallOverrides
+  ): Promise<boolean>;
 
   initialize(
     _roles: PromiseOrValue<BytesLike>[],
@@ -534,12 +573,17 @@ export interface Shield extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    burnCredentials(
+    cancelCredentials(
       credentials: CredentialsStruct,
       overrides?: CallOverrides
     ): Promise<void>;
 
-    burns(
+    canceled(
+      arg0: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
+
+    executed(
       arg0: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<boolean>;
@@ -561,6 +605,12 @@ export interface Shield extends BaseContract {
       user: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<string>;
+
+    hasAnyRoles(
+      user: PromiseOrValue<string>,
+      _roles: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
 
     initialize(
       _roles: PromiseOrValue<BytesLike>[],
@@ -673,12 +723,17 @@ export interface Shield extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
-    burnCredentials(
+    cancelCredentials(
       credentials: CredentialsStruct,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
-    burns(
+    canceled(
+      arg0: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    executed(
       arg0: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
@@ -698,6 +753,12 @@ export interface Shield extends BaseContract {
 
     getUser(
       user: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    hasAnyRoles(
+      user: PromiseOrValue<string>,
+      _roles: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
@@ -766,12 +827,17 @@ export interface Shield extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 
-    burnCredentials(
+    cancelCredentials(
       credentials: CredentialsStruct,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 
-    burns(
+    canceled(
+      arg0: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    executed(
       arg0: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
@@ -791,6 +857,12 @@ export interface Shield extends BaseContract {
 
     getUser(
       user: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    hasAnyRoles(
+      user: PromiseOrValue<string>,
+      _roles: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 

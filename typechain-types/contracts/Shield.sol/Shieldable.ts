@@ -26,17 +26,25 @@ import type {
 
 export interface ShieldableInterface extends utils.Interface {
   functions: {
-    "burns(bytes32)": FunctionFragment;
+    "canceled(bytes32)": FunctionFragment;
+    "executed(bytes32)": FunctionFragment;
   };
 
-  getFunction(nameOrSignatureOrTopic: "burns"): FunctionFragment;
+  getFunction(
+    nameOrSignatureOrTopic: "canceled" | "executed"
+  ): FunctionFragment;
 
   encodeFunctionData(
-    functionFragment: "burns",
+    functionFragment: "canceled",
+    values: [PromiseOrValue<BytesLike>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "executed",
     values: [PromiseOrValue<BytesLike>]
   ): string;
 
-  decodeFunctionResult(functionFragment: "burns", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "canceled", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "executed", data: BytesLike): Result;
 
   events: {
     "ShieldableDeployed(address,address)": EventFragment;
@@ -84,19 +92,34 @@ export interface Shieldable extends BaseContract {
   removeListener: OnEvent<this>;
 
   functions: {
-    burns(
+    canceled(
+      arg0: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<[boolean]>;
+
+    executed(
       arg0: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<[boolean]>;
   };
 
-  burns(
+  canceled(
+    arg0: PromiseOrValue<BytesLike>,
+    overrides?: CallOverrides
+  ): Promise<boolean>;
+
+  executed(
     arg0: PromiseOrValue<BytesLike>,
     overrides?: CallOverrides
   ): Promise<boolean>;
 
   callStatic: {
-    burns(
+    canceled(
+      arg0: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
+
+    executed(
       arg0: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<boolean>;
@@ -114,14 +137,24 @@ export interface Shieldable extends BaseContract {
   };
 
   estimateGas: {
-    burns(
+    canceled(
+      arg0: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    executed(
       arg0: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
   };
 
   populateTransaction: {
-    burns(
+    canceled(
+      arg0: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    executed(
       arg0: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;

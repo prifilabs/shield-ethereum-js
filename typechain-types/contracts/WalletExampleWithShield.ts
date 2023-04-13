@@ -51,14 +51,21 @@ export type CredentialsStructOutput = [
 
 export interface WalletExampleWithShieldInterface extends utils.Interface {
   functions: {
-    "burns(bytes32)": FunctionFragment;
+    "canceled(bytes32)": FunctionFragment;
+    "executed(bytes32)": FunctionFragment;
     "withdraw(uint256,(uint256,uint256,address,bytes,bytes[]))": FunctionFragment;
   };
 
-  getFunction(nameOrSignatureOrTopic: "burns" | "withdraw"): FunctionFragment;
+  getFunction(
+    nameOrSignatureOrTopic: "canceled" | "executed" | "withdraw"
+  ): FunctionFragment;
 
   encodeFunctionData(
-    functionFragment: "burns",
+    functionFragment: "canceled",
+    values: [PromiseOrValue<BytesLike>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "executed",
     values: [PromiseOrValue<BytesLike>]
   ): string;
   encodeFunctionData(
@@ -66,7 +73,8 @@ export interface WalletExampleWithShieldInterface extends utils.Interface {
     values: [PromiseOrValue<BigNumberish>, CredentialsStruct]
   ): string;
 
-  decodeFunctionResult(functionFragment: "burns", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "canceled", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "executed", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "withdraw", data: BytesLike): Result;
 
   events: {
@@ -115,7 +123,12 @@ export interface WalletExampleWithShield extends BaseContract {
   removeListener: OnEvent<this>;
 
   functions: {
-    burns(
+    canceled(
+      arg0: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<[boolean]>;
+
+    executed(
       arg0: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<[boolean]>;
@@ -127,7 +140,12 @@ export interface WalletExampleWithShield extends BaseContract {
     ): Promise<ContractTransaction>;
   };
 
-  burns(
+  canceled(
+    arg0: PromiseOrValue<BytesLike>,
+    overrides?: CallOverrides
+  ): Promise<boolean>;
+
+  executed(
     arg0: PromiseOrValue<BytesLike>,
     overrides?: CallOverrides
   ): Promise<boolean>;
@@ -139,7 +157,12 @@ export interface WalletExampleWithShield extends BaseContract {
   ): Promise<ContractTransaction>;
 
   callStatic: {
-    burns(
+    canceled(
+      arg0: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
+
+    executed(
       arg0: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<boolean>;
@@ -163,7 +186,12 @@ export interface WalletExampleWithShield extends BaseContract {
   };
 
   estimateGas: {
-    burns(
+    canceled(
+      arg0: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    executed(
       arg0: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
@@ -176,7 +204,12 @@ export interface WalletExampleWithShield extends BaseContract {
   };
 
   populateTransaction: {
-    burns(
+    canceled(
+      arg0: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    executed(
       arg0: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;

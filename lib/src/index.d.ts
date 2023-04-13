@@ -1,12 +1,9 @@
 import { ethers } from 'ethers';
-import { TransactionResponse } from "@ethersproject/providers";
+import { TransactionResponse } from '@ethersproject/providers';
+export * as utils from './utils';
+import * as Store from './store';
 import { Credentials } from './types';
 export declare function getDefaultFactory(signer: ethers.Signer, network: string): Promise<ethers.Contract>;
-export declare function createCredentials(signer: ethers.Signer, to: ethers.Contract, func: string, args: any[]): Promise<Credentials>;
-export declare function approveCredentials(signer: ethers.Signer, credentials: Credentials): Promise<Credentials>;
-export declare function encodeCredentials(credentials: Credentials): string;
-export declare function decodeCredentials(encodedCredentials: string): Credentials;
-export declare function executeCredentials(signer: ethers.Signer, credentials: Credentials, iface: ethers.utils.Interface, options?: any): Promise<TransactionResponse>;
 export declare function getShields(signer: ethers.Signer, factory: ethers.Contract): Promise<{
     [address: string]: string;
 }>;
@@ -16,19 +13,20 @@ export declare function createShield(signer: ethers.Signer, name: string, roles:
 }>;
 export declare function instantiateShield(signer: ethers.Signer, address: string): Promise<Shield>;
 export declare class Shield {
+    signer: ethers.Signer;
     contract: ethers.Contract;
-    abis: {
-        [address: string]: ethers.utils.Interface;
-    };
-    constructor(contract: ethers.Contract);
-    addInterface(address: string, iface: ethers.utils.Interface): void;
+    store: Store.IStore;
+    constructor(signer: ethers.Signer, contract: ethers.Contract);
+    initStorage(): Promise<void>;
+    addInterface(address: string, iface: ethers.utils.Interface): Promise<void>;
+    getInterface(address: string): Promise<ethers.utils.Interface>;
     getRoles(): Promise<string[]>;
-    createCredentialsForAddRoles(signer: ethers.Signer, roles: string[]): Promise<Credentials>;
+    createCredentialsForAddRoles(roles: string[]): Promise<Credentials>;
     getUsers(): Promise<{
         [address: string]: string[];
     }>;
     getUser(address: string): Promise<string[]>;
-    createCredentialsForSetUsers(signer: ethers.Signer, users: Array<{
+    createCredentialsForSetUsers(users: Array<{
         address: string;
         roles: string[];
     }>): Promise<Credentials>;
@@ -36,19 +34,20 @@ export declare class Shield {
         [label: string]: string[][];
     }>;
     getPolicy(label: string): Promise<string[][]>;
-    createCredentialsForAddPolicy(signer: ethers.Signer, label: string, policy: string[][]): Promise<Credentials>;
+    createCredentialsForAddPolicy(label: string, policy: string[][]): Promise<Credentials>;
     getAssignedPolicies(): Promise<{
         [address: string]: {
             [func: string]: string;
         };
     }>;
     getAssignedPolicy(to: string, func: string): Promise<string>;
-    createCredentialsForAssignPolicy(signer: ethers.Signer, to: string, func: string, label: string): Promise<Credentials>;
+    createCredentialsForAssignPolicy(to: string, func: string, label: string): Promise<Credentials>;
     isPaused(): Promise<boolean>;
-    createCredentialsForPause(signer: ethers.Signer): Promise<Credentials>;
-    createCredentialsForUnpause(signer: ethers.Signer): Promise<Credentials>;
-    createCredentialsForTransfer(signer: ethers.Signer, to: string, amount: number): Promise<Credentials>;
-    burnCredentials(signer: ethers.Signer, credentials: Credentials): Promise<TransactionResponse>;
+    createCredentialsForPause(): Promise<Credentials>;
+    createCredentialsForUnpause(): Promise<Credentials>;
+    createCredentialsForTransfer(to: string, amount: number): Promise<Credentials>;
+    canApprove(to: string, func: string, index?: number): Promise<any>;
+    getCredentials(): Promise<Credentials[]>;
     checkCredentials(credentials: Credentials, full?: boolean): Promise<{
         chainid: number;
         timestamp: number;
@@ -57,6 +56,10 @@ export declare class Shield {
         args: any[];
         approvals: string[];
     }>;
-    executeCredentials(signer: ethers.Signer, credentials: Credentials): Promise<TransactionResponse>;
-    isBurnt(signer: ethers.Signer, credentials: Credentials): Promise<boolean>;
+    createCredentials(to: string, func: string, args: any[]): Promise<Credentials>;
+    approveCredentials(credentials: Credentials): Promise<Credentials>;
+    executeCredentials(credentials: Credentials, options?: any): Promise<TransactionResponse>;
+    cancelCredentials(credentials: Credentials): Promise<TransactionResponse>;
+    isCanceled(credentials: Credentials): Promise<boolean>;
+    isExecuted(credentials: Credentials): Promise<boolean>;
 }

@@ -23,7 +23,8 @@ struct User {
 
 abstract contract Shieldable {
     Shield internal shield;
-    mapping(bytes32 => bool) public burns;
+    mapping(bytes32 => bool) public executed;
+    mapping(bytes32 => bool) public canceled;
 
     event ShieldableDeployed(address shieldable, address shield);
 
@@ -49,8 +50,11 @@ abstract contract Shieldable {
             msg.data[:l],
             true
         );
+        if (executed[keccak256(credentials.approvals[0])]) {
+            revert InvalidCredentials('Credentials have been executed already');
+        }
         _;
-        burns[keccak256(credentials.approvals[0])] = true;
+        executed[keccak256(credentials.approvals[0])] = true;
     }
 }
 
@@ -137,6 +141,14 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
 
     function getUser(address user) public view returns (bytes8) {
         return users[user];
+    }
+
+    function hasAnyRoles(
+        address user,
+        bytes8 _roles
+    ) public view returns (bool) {
+        bytes8 result = getUser(user) & _roles;
+        return (result != bytes8(0));
     }
 
     function _addPolicy(bytes32 label, bytes8[] memory policy) private {
@@ -236,6 +248,9 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
         if (credentials.approvals.length == 0) {
             revert InvalidCredentials('Approvals cannot be empty');
         }
+        if (canceled[keccak256(credentials.approvals[0])]) {
+            revert InvalidCredentials('Credentials have been canceled');
+        }
         bytes8[] memory policy = getAssignedPolicy(to, f);
         if (full) {
             if (credentials.approvals.length != policy.length) {
@@ -245,9 +260,6 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
             if (credentials.approvals.length > policy.length) {
                 revert InvalidCredentials('Incorrect number of approvals');
             }
-        }
-        if (burns[keccak256(credentials.approvals[0])]) {
-            revert InvalidCredentials('Credentials have been used already');
         }
         address[] memory signers = new address[](credentials.approvals.length);
         for (uint i = 0; i < credentials.approvals.length; i++) {
@@ -270,8 +282,7 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
             address signer = signerHash.toEthSignedMessageHash().recover(
                 approval
             );
-            bytes32 isValid = getUser(signer) & policy[i];
-            if (isValid == bytes32(0)) {
+            if (!hasAnyRoles(signer, policy[i])) {
                 revert InvalidCredentials('Policy violation');
             }
             if (i == 0) {
@@ -294,7 +305,7 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
         return signers;
     }
 
-    function burnCredentials(Credentials calldata credentials) public {
+    function cancelCredentials(Credentials calldata credentials) public {
         bytes32 signerHash = keccak256(
             abi.encode(
                 credentials.timestamp,
@@ -316,7 +327,7 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
         );
         for (uint i = 0; i < signers.length; i++) {
             if (signers[i] == msg.sender) {
-                burns[keccak256(credentials.approvals[0])] = true;
+                canceled[keccak256(credentials.approvals[0])] = true;
                 break;
             }
         }

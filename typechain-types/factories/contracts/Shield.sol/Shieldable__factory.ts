@@ -48,7 +48,26 @@ const _abi = [
         type: "bytes32",
       },
     ],
-    name: "burns",
+    name: "canceled",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes32",
+        name: "",
+        type: "bytes32",
+      },
+    ],
+    name: "executed",
     outputs: [
       {
         internalType: "bool",

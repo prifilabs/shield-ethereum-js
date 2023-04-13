@@ -1,5 +1,7 @@
 import { Signer, constants, utils } from 'ethers'
 
+import { Credentials } from './types'
+
 export function signData(signer: Signer, types: string[], values: any[]) {
     let message = utils.arrayify(
         utils.keccak256(utils.defaultAbiCoder.encode(types, values))
@@ -31,6 +33,14 @@ function getNullCredentialEncoded() {
     )
 }
 
+export function getSignature(func, iface) {
+    return iface.getSighash(func)
+}
+
+export function getFunction(sig, iface) {
+    return iface.getFunction(sig).format(utils.FormatTypes.full)
+}
+
 export function encodeCallData(func, args, iface) {
     const call = iface.encodeFunctionData(func, [...args, getNullCredential()])
     return call.slice(0, call.length - (getNullCredentialEncoded().length - 2))
@@ -45,6 +55,27 @@ export function decodeCallData(call, iface) {
     )
     args = args.slice(0, -1)
     return { func, args }
+}
+
+export function encodeCredentials(credentials: Credentials): string {
+    const { timestamp, chainid, to, call, approvals } = credentials
+
+    return btoa(
+        JSON.stringify({
+            timestamp,
+            chainid,
+            to,
+            call,
+            approvals: approvals.map(btoa),
+        })
+    )
+}
+
+export function decodeCredentials(encodedCredentials: string): Credentials {
+    const { timestamp, chainid, to, call, approvals } = JSON.parse(
+        atob(encodedCredentials)
+    )
+    return { timestamp, chainid, to, call, approvals: approvals.map(atob) }
 }
 
 // https://stackoverflow.com/questions/69721296/how-to-encode-integer-to-uint8array-and-back-to-integer-in-javascript
