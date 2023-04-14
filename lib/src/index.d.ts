@@ -1,23 +1,24 @@
 import { ethers } from 'ethers';
 import { TransactionResponse } from '@ethersproject/providers';
-export * as utils from './utils';
+export * as Utils from './utils';
 import * as Store from './store';
+export * as Store from './store';
 import { Credentials } from './types';
 export declare function getDefaultFactory(signer: ethers.Signer, network: string): Promise<ethers.Contract>;
 export declare function getShields(signer: ethers.Signer, factory: ethers.Contract): Promise<{
     [address: string]: string;
 }>;
-export declare function createShield(signer: ethers.Signer, name: string, roles: any[], users: any[], policy: any[], factory: ethers.Contract): Promise<{
+export declare function createShield(signer: ethers.Signer, name: string, roles: any[], users: any[], policy: any[], factory: ethers.Contract, storeClass?: Store.StoreClass): Promise<{
     tx: TransactionResponse;
     shield: Shield;
 }>;
-export declare function instantiateShield(signer: ethers.Signer, address: string): Promise<Shield>;
+export declare function instantiateShield(signer: ethers.Signer, address: string, storeClass?: Store.StoreClass): Promise<Shield>;
 export declare class Shield {
     signer: ethers.Signer;
     contract: ethers.Contract;
     store: Store.IStore;
     constructor(signer: ethers.Signer, contract: ethers.Contract);
-    initStorage(): Promise<void>;
+    initStorage(storeClass?: Store.StoreClass): Promise<void>;
     addInterface(address: string, iface: ethers.utils.Interface): Promise<void>;
     getInterface(address: string): Promise<ethers.utils.Interface>;
     getRoles(): Promise<string[]>;
@@ -47,7 +48,7 @@ export declare class Shield {
     createCredentialsForUnpause(): Promise<Credentials>;
     createCredentialsForTransfer(to: string, amount: number): Promise<Credentials>;
     canApprove(to: string, func: string, index?: number): Promise<any>;
-    getCredentials(): Promise<Credentials[]>;
+    getCredentials(): Promise<Array<Credentials>>;
     checkCredentials(credentials: Credentials, full?: boolean): Promise<{
         chainid: number;
         timestamp: number;

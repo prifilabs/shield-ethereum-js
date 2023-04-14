@@ -50,9 +50,6 @@ abstract contract Shieldable {
             msg.data[:l],
             true
         );
-        if (executed[keccak256(credentials.approvals[0])]) {
-            revert InvalidCredentials('Credentials have been executed already');
-        }
         _;
         executed[keccak256(credentials.approvals[0])] = true;
     }
@@ -248,11 +245,16 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
         if (credentials.approvals.length == 0) {
             revert InvalidCredentials('Approvals cannot be empty');
         }
-        if (canceled[keccak256(credentials.approvals[0])]) {
-            revert InvalidCredentials('Credentials have been canceled');
-        }
         bytes8[] memory policy = getAssignedPolicy(to, f);
         if (full) {
+            if (canceled[keccak256(credentials.approvals[0])]) {
+                revert InvalidCredentials('Credentials have been canceled');
+            }
+            if (executed[keccak256(credentials.approvals[0])]) {
+                revert InvalidCredentials(
+                    'Credentials have been executed already'
+                );
+            }
             if (credentials.approvals.length != policy.length) {
                 revert InvalidCredentials('Incorrect number of approvals');
             }

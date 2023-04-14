@@ -1,7 +1,5 @@
 # The Shield
 
-The version 0.1 of the Shield is totally **unsecured**. It is still work in progress.
-
 ## API
 
 ### Core functions
@@ -24,48 +22,41 @@ Shield getters
 -   `getAssignedPolicy(to: string, func: string): Promise<string>`
 -   `isPaused(): Promise<boolean>`
 
-Handling credentials
+Handling Interfaces
 
--   `createCredentials(signer: ethers.Signer, to: string, func: string, args: any[]): Promise<Credentials>`: returns a new credentials to call the function `func` from the contract `to` with the args `args`.
--   `approveCredentials(signer: ethers.Signer, credentials: Credentials): Promise<Credentials>`: returns a newly approved credentials
+-   `addInterface(address: string, iface: ethers.utils.Interface)`
+-   `getInterface(address: string): Promise<ethers.utils.Interface>`
+
+Handling Credentials
+
+-   `getCredentials(): Promise<Array<Credentials>>`
+-   `createCredentials(to: string, func: string, args: any[]): Promise<Credentials>`: returns a new credentials to call the function `func` from the contract `to` with the args `args`.
+-   `approveCredentials(credentials: Credentials): Promise<Credentials>`: returns a newly approved credentials
 -   `checkCredentials(credentials: Credentials, full?: boolean):Promise<{to: string, func: string, args:any[], timestamp:number, approvals: string[]}>`
--   `executeCredentials(signer: ethers.Signer, credentials: Credentials)` execute the credentials
--   `cancelCredentials(signer: ethers.Signer, credentials: Credentials): Promise<ethers.Transaction>`
+-   `executeCredentials(credentials: Credentials)` execute the credentials
+-   `cancelCredentials(credentials: Credentials): Promise<ethers.Transaction>`
 -   `isExecuted(credentials: Credentials):Promise<boolean>`
 -   `isCanceled(credentials: Credentials):Promise<boolean>`
 
 `createCredentials` wrappers
 
--   `createCredentialsForAddRoles(signer: ethers.Signer, roles: string[]): Promise<Credentials>`
--   `createCredentialsForSetUsers(signer: ethers.Signer, users: Array<{ address: string; roles: string[] }>): Promise<Credentials>`
--   `createCredentialsForAddPolicy(signer: ethers.Signer, label: string, policy: string[][]): Promise<Credentials>`
--   `createCredentialsForAssignPolicy(signer: ethers.Signer, to: address, func: string, label: string)`
--   `createCredentialsForPause(signer: ethers.Signer): Promise<Credentials>`
--   `createCredentialsForUnpause(signer: ethers.Signer)`
--   `createCredentialsForTransfer(signer: ethers.Signer, to: string, amount: number): Promise<Credentials>`
-
-### Method of `Store` object
-
-Storing interfaces
-
--   `addInterface(address: string, iface: ethers.utils.Interface)`
--   `getInterface(address: string): ethers.utils.Interface`
-
-Storing credentials
-
--   `addCredential`
--   `updateCredential`
--   `getCredentials`
+-   `createCredentialsForAddRoles(roles: string[]): Promise<Credentials>`
+-   `createCredentialsForSetUsers(users: Array<{ address: string; roles: string[] }>): Promise<Credentials>`
+-   `createCredentialsForAddPolicy(label: string, policy: string[][]): Promise<Credentials>`
+-   `createCredentialsForAssignPolicy(to: address, func: string, label: string)`
+-   `createCredentialsForPause(): Promise<Credentials>`
+-   `createCredentialsForUnpause()`
+-   `createCredentialsForTransfer(to: string, amount: number): Promise<Credentials>`
 
 ### Utils
 
--   `signData(signer: Signer, types: string[], values: any[])`
--   `getSigner(types: string[], values: any[], signature: string)`
--   `encodeCredentials(credentials: Credentials): string`: returns the base-64 encoded version of credentials
--   `decodeCredentials(encodedCredentials: string): Credential` returns the decoded credentials of the base-64 encoded string
--   `getSignature(func, iface)`
--   `getFunction(sig, iface)`
--   `encodeCallData(func, args, iface)`
--   `decodeCallData(call, iface)`
--   `getBytesFromRoles(roles: any[], allRoles: any[])`
--   `getRolesFromBytes(bytes: any, allRoles: any[])`
+-   `Utils.signData(signer: Signer, types: string[], values: any[])`
+-   `Utils.getSigner(types: string[], values: any[], signature: string)`
+-   `Utils.encodeCredentials(credentials: Credentials): string`: returns the base-64 encoded version of credentials
+-   `Utils.decodeCredentials(encodedCredentials: string): Credential` returns the decoded credentials of the base-64 encoded string
+-   `Utils.getSignature(func, iface)`
+-   `Utils.getFunction(sig, iface)`
+-   `Utils.encodeCallData(func, args, iface)`
+-   `Utils.decodeCallData(call, iface)`
+-   `Utils.getBytesFromRoles(roles: any[], allRoles: any[])`
+-   `Utils.getRolesFromBytes(bytes: any, allRoles: any[])`

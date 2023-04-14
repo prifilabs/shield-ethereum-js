@@ -4,7 +4,8 @@ import { expect } from 'chai'
 import { ethers } from 'hardhat'
 
 import {
-    utils,
+    Utils,
+    Store,
     Shield,
     createShield,
     instantiateShield,
@@ -31,13 +32,17 @@ describe('Shield', function () {
             const { factory, alice, bob } = await loadFixture(
                 deployFactoryFixture
             )
+            // Store.ServerStore.setServer("http://localhost:4000");
+            // const store = Store.getServerStore;
+            const store = undefined
             const { shield } = await createShield(
                 alice,
                 'MyShield',
                 ['admin', 'employee'],
                 [{ addr: alice.address, roles: ['admin', 'employee'] }],
                 [['admin']],
-                factory
+                factory,
+                store
             )
             const { shield: badShield } = await createShield(
                 bob,
@@ -48,11 +53,13 @@ describe('Shield', function () {
                     { addr: bob.address, roles: ['admin'] },
                 ],
                 [['admin']],
-                factory
+                factory,
+                store
             )
             const bobShield = await instantiateShield(
                 bob,
-                shield.contract.address
+                shield.contract.address,
+                store
             )
             context = { factory, shield, badShield, bobShield, alice, bob }
         })
@@ -147,7 +154,7 @@ describe('Shield', function () {
                 'transfer',
             ]) {
                 expect(assignments[shield.contract.address]).to.have.property(
-                    utils.getFunction(f, shield.contract.interface),
+                    Utils.getFunction(f, shield.contract.interface),
                     'admin-policy'
                 )
             }
@@ -496,6 +503,13 @@ describe('Shield', function () {
             await expect(
                 shield.executeCredentials(credentials)
             ).to.be.revertedWithCustomError(shield.contract, 'ShieldError')
+        })
+    })
+
+    describe('Rejections', function () {
+        it('Should get all credentials', async function () {
+            const { shield } = context
+            expect(await shield.getCredentials()).not.be.empty
         })
     })
 })

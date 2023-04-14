@@ -5,6 +5,7 @@ import { ethers } from 'hardhat'
 
 import {
     Shield,
+    Store,
     createShield,
     instantiateShield,
     createCredentials,
@@ -29,6 +30,9 @@ describe('Wallet Example', function () {
             const { factory, alice, bob } = await loadFixture(
                 deployFactoryFixture
             )
+            // Store.ServerStore.setServer("http://localhost:4000");
+            // const store = Store.getServerStore;
+            const store = undefined
             const name = 'MyShield'
             const roles = ['employee', 'admin']
             const users = [
@@ -42,11 +46,13 @@ describe('Wallet Example', function () {
                 roles,
                 users,
                 policy,
-                factory
+                factory,
+                store
             )
             const bobShield = await instantiateShield(
                 bob,
-                shield.contract.address
+                shield.contract.address,
+                store
             )
             context = { shield, alice, bob, bobShield }
         })
