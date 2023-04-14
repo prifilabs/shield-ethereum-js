@@ -1,4 +1,4 @@
-import axios from 'axios'
+import fetch from 'cross-fetch'
 
 import { ethers } from 'ethers'
 
@@ -68,8 +68,12 @@ export class ServerStore implements IStore {
     }
 
     async addInterface(address: string, iface: ethers.utils.Interface) {
-        await axios.put(`${this.url}/interfaces/${address}/`, {
-            interface: iface.format(ethers.utils.FormatTypes.full),
+        await fetch(`${this.url}/interfaces/${address}/`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                interface: iface.format(ethers.utils.FormatTypes.full),
+            }),
         })
         this.cache[address] = iface
     }
@@ -78,19 +82,25 @@ export class ServerStore implements IStore {
         if (address in this.cache) {
             return this.cache[address]
         }
-        const response = await axios.get(`${this.url}/interfaces/${address}/`)
-        return new ethers.utils.Interface(response.data.interface)
+        const response = await fetch(`${this.url}/interfaces/${address}/`)
+        const data = await response.json()
+        return new ethers.utils.Interface(data.interface)
     }
 
     async addCredentials(credentials: Credentials) {
-        await axios.post(`${this.url}/credentials/`, {
-            credentials: Utils.encodeCredentials(credentials),
+        await fetch(`${this.url}/credentials/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                credentials: Utils.encodeCredentials(credentials),
+            }),
         })
     }
 
     async getCredentials(): Promise<Array<Credentials>> {
-        const response = await axios.get(`${this.url}/credentials/`)
-        return response.data.map(function (credentials) {
+        const response = await fetch(`${this.url}/credentials/`)
+        const data = await response.json()
+        return data.map(function (credentials) {
             return Utils.decodeCredentials(credentials)
         })
     }
