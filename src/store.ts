@@ -1,3 +1,5 @@
+import axios from 'axios'
+
 import { ethers } from 'ethers'
 
 import { Credentials } from './types'
@@ -50,8 +52,6 @@ export class MemoryStore implements IStore {
         return Object.values(MemoryStore.credentials)
     }
 }
-
-import axios, { isCancel, AxiosError } from 'axios'
 
 export class ServerStore implements IStore {
     private cache: { [address: string]: ethers.utils.Interface } = {}
