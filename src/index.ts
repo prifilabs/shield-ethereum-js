@@ -79,7 +79,6 @@ export async function createShield(
     )
     const [_, address] = event?.args
     const shield = await instantiateShield(signer, address, storeClass)
-    await shield.addInterface(shield.contract.address, SHIELD_INTERFACE)
     return { tx, shield }
 }
 
@@ -91,6 +90,7 @@ export async function instantiateShield(
     let contract = new ethers.Contract(address, SHIELD_INTERFACE, signer)
     const shield = new Shield(signer, contract)
     await shield.initStorage(storeClass)
+    await shield.addInterface(shield.contract.address, SHIELD_INTERFACE)
     return shield
 }
 
