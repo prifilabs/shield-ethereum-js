@@ -13,6 +13,7 @@
 
 Shield getters
 
+-   `getShieldables(): Promise<string[]>`
 -   `getRoles(): Promise<string[]>`
 -   `getUsers(): Promise<{[address: string]: string[]}>`
 -   `getUser(address: string): Promise<string[]>`
