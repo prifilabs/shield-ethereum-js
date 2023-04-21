@@ -21,18 +21,18 @@ struct User {
     bytes8 roles;
 }
 
+error InvalidCredentials(string reason);
+
 abstract contract Shieldable {
     Shield internal shield;
     mapping(bytes32 => bool) public executed;
     mapping(bytes32 => bool) public canceled;
 
-    event ShieldableDeployed(address shieldable, address shield);
-
-    error InvalidCredentials(string reason);
-
     constructor(Shield _shield) {
         shield = _shield;
-        emit ShieldableDeployed(address(this), address(shield));
+        if (address(this) != address(shield)) {
+            shield.addShieldable(address(this));
+        }
     }
 
     modifier checkCredentials(Credentials calldata credentials) {
@@ -62,6 +62,7 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
     mapping(bytes32 => bytes8[]) internal policies;
     mapping(address => mapping(bytes4 => bytes32)) internal assignments;
 
+    event ShieldableAdded(address shieldable);
     event RolesAdded(bytes32[] roles);
     event UsersSet(User[] users);
     event PolicyAdded(bytes32 indexed label, bytes8[] policy);
@@ -97,6 +98,10 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
         _assignPolicy(address(this), 0x8441e0af, 'admin-policy');
         _assignPolicy(address(this), 0xe8fc5b2c, 'admin-policy');
         _assignPolicy(address(this), 0x73c62905, 'admin-policy');
+    }
+
+    function addShieldable(address shieldable) public {
+        emit ShieldableAdded(shieldable);
     }
 
     // If you change the signature of this function, do not forget to update the function signature in the function 'initialize'

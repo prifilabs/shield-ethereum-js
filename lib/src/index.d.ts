@@ -21,6 +21,7 @@ export declare class Shield {
     initStorage(storeClass?: Store.StoreClass): Promise<void>;
     addInterface(address: string, iface: ethers.utils.Interface): Promise<void>;
     getInterface(address: string): Promise<ethers.utils.Interface>;
+    getShieldables(): Promise<Array<string>>;
     getRoles(): Promise<string[]>;
     createCredentialsForAddRoles(roles: string[]): Promise<Credentials>;
     getUsers(): Promise<{

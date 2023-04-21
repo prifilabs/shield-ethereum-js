@@ -11,6 +11,7 @@ import { Credentials } from './types'
 
 import {
     getShieldCreated,
+    getShieldableAdded,
     getUsersSet,
     getPolicyAdded,
     getPolicyAssigned,
@@ -122,6 +123,10 @@ export class Shield {
 
     async getInterface(address: string): Promise<ethers.utils.Interface> {
         return this.store.getInterface(address)
+    }
+
+    async getShieldables(): Promise<Array<string>> {
+        return getShieldableAdded(this.contract, 0, 'latest')
     }
 
     async getRoles(): Promise<string[]> {

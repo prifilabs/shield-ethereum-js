@@ -6,36 +6,6 @@
     {
       "inputs": [
         {
-          "internalType": "string",
-          "name": "reason",
-          "type": "string"
-        }
-      ],
-      "name": "InvalidCredentials",
-      "type": "error"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "shieldable",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "shield",
-          "type": "address"
-        }
-      ],
-      "name": "ShieldableDeployed",
-      "type": "event"
-    },
-    {
-      "inputs": [
-        {
           "internalType": "bytes32",
           "name": "",
           "type": "bytes32"

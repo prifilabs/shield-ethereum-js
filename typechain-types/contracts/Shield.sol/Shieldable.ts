@@ -10,11 +10,7 @@ import type {
   Signer,
   utils,
 } from "ethers";
-import type {
-  FunctionFragment,
-  Result,
-  EventFragment,
-} from "@ethersproject/abi";
+import type { FunctionFragment, Result } from "@ethersproject/abi";
 import type { Listener, Provider } from "@ethersproject/providers";
 import type {
   TypedEventFilter,
@@ -46,24 +42,8 @@ export interface ShieldableInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "canceled", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "executed", data: BytesLike): Result;
 
-  events: {
-    "ShieldableDeployed(address,address)": EventFragment;
-  };
-
-  getEvent(nameOrSignatureOrTopic: "ShieldableDeployed"): EventFragment;
+  events: {};
 }
-
-export interface ShieldableDeployedEventObject {
-  shieldable: string;
-  shield: string;
-}
-export type ShieldableDeployedEvent = TypedEvent<
-  [string, string],
-  ShieldableDeployedEventObject
->;
-
-export type ShieldableDeployedEventFilter =
-  TypedEventFilter<ShieldableDeployedEvent>;
 
 export interface Shieldable extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
@@ -125,16 +105,7 @@ export interface Shieldable extends BaseContract {
     ): Promise<boolean>;
   };
 
-  filters: {
-    "ShieldableDeployed(address,address)"(
-      shieldable?: null,
-      shield?: null
-    ): ShieldableDeployedEventFilter;
-    ShieldableDeployed(
-      shieldable?: null,
-      shield?: null
-    ): ShieldableDeployedEventFilter;
-  };
+  filters: {};
 
   estimateGas: {
     canceled(

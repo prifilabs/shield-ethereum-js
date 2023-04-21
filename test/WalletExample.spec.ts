@@ -71,6 +71,13 @@ describe('Wallet Example', function () {
             context = { ...context, wallet }
         })
 
+        it('Should get wallet as one of the shieldables', async function () {
+            const { shield, wallet } = context
+            expect(await shield.getShieldables()).to.have.members([
+                wallet.address,
+            ])
+        })
+
         it.skip('Should not allow Alice to withdraw', async function () {
             const { shield, wallet, alice } = context
             const credentials = await shield.createCredentials(
