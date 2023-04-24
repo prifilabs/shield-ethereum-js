@@ -511,10 +511,21 @@ describe('Shield', function () {
         })
     })
 
-    describe('Rejections', function () {
+    describe('Storage', function () {
+        let credentials
+
         it('Should get all credentials', async function () {
             const { shield } = context
-            expect(await shield.getCredentials()).not.be.empty
+            credentials = await shield.getCredentials()
+            expect(credentials).not.be.empty
+        })
+        it('Should get all hashes', async function () {
+            const { shield } = context
+            for (let c of credentials) {
+                if (await shield.isExecuted(c)) {
+                    expect(await shield.getTransactionHash(c)).not.be.empty
+                }
+            }
         })
     })
 })

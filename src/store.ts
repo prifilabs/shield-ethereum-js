@@ -13,6 +13,8 @@ export interface IStore {
     getInterface: (address: string) => Promise<ethers.utils.Interface>
     addCredentials: (credentials: Credentials) => Promise<void>
     getCredentials: () => Promise<Array<Credentials>>
+    addTransaction: (credentials: Credentials, hash: string) => Promise<void>
+    getTransaction: (credentials: Credentials) => Promise<string>
 }
 
 export type StoreClass = (network: string, shield: string) => IStore
@@ -28,6 +30,7 @@ export const getServerStore: StoreClass = function (network, shield) {
 export class MemoryStore implements IStore {
     static credentials: { [approval: string]: Credentials } = {}
     static interfaces: { [address: string]: ethers.utils.Interface } = {}
+    static transactions: { [approval: string]: string } = {}
 
     constructor(network: string, shield: string) {}
 
@@ -51,10 +54,19 @@ export class MemoryStore implements IStore {
     async getCredentials(): Promise<Array<Credentials>> {
         return Object.values(MemoryStore.credentials)
     }
+
+    async addTransaction(credentials: Credentials, hash: string) {
+        MemoryStore.transactions[credentials.approvals[0]] = hash
+    }
+
+    async getTransaction(credentials: Credentials): Promise<string> {
+        return MemoryStore.transactions[credentials.approvals[0]]
+    }
 }
 
 export class ServerStore implements IStore {
-    private cache: { [address: string]: ethers.utils.Interface } = {}
+    private interfaceCache: { [address: string]: ethers.utils.Interface }
+    private transactionCache: { [approver: string]: string }
     private static server = 'https://shield-backend.prifilabs.com'
     private url: string
 
@@ -64,7 +76,8 @@ export class ServerStore implements IStore {
 
     constructor(network: string, shield: string) {
         this.url = `${ServerStore.server}/${network}/${shield}`
-        this.cache = {}
+        this.interfaceCache = {}
+        this.transactionCache = {}
     }
 
     async addInterface(address: string, iface: ethers.utils.Interface) {
@@ -75,16 +88,18 @@ export class ServerStore implements IStore {
                 interface: iface.format(ethers.utils.FormatTypes.full),
             }),
         })
-        this.cache[address] = iface
+        this.interfaceCache[address] = iface
     }
 
     async getInterface(address: string): Promise<ethers.utils.Interface> {
-        if (address in this.cache) {
-            return this.cache[address]
+        if (address in this.interfaceCache) {
+            return this.interfaceCache[address]
         }
         const response = await fetch(`${this.url}/interfaces/${address}/`)
         const data = await response.json()
-        return new ethers.utils.Interface(data.interface)
+        const iface = new ethers.utils.Interface(data.interface)
+        this.interfaceCache[address] = iface
+        return iface
     }
 
     async addCredentials(credentials: Credentials) {
@@ -103,5 +118,29 @@ export class ServerStore implements IStore {
         return data.map(function (credentials) {
             return Utils.decodeCredentials(credentials)
         })
+    }
+
+    async addTransaction(credentials: Credentials, hash: string) {
+        const approver = btoa(credentials.approvals[0])
+        await fetch(`${this.url}/credentials/${approver}/`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                tx: hash,
+            }),
+        })
+        this.transactionCache[approver] = hash
+    }
+
+    async getTransaction(credentials: Credentials): Promise<string> {
+        const approver = btoa(credentials.approvals[0])
+        if (approver in this.transactionCache) {
+            return this.transactionCache[approver]
+        }
+        const response = await fetch(`${this.url}/credentials/${approver}/`)
+        const data = await response.json()
+        const tx = data.tx
+        this.transactionCache[approver] = tx
+        return tx
     }
 }

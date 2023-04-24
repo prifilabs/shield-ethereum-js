@@ -64,4 +64,5 @@ export declare class Shield {
     cancelCredentials(credentials: Credentials): Promise<TransactionResponse>;
     isCanceled(credentials: Credentials): Promise<boolean>;
     isExecuted(credentials: Credentials): Promise<boolean>;
+    getTransactionHash(credentials: Credentials): Promise<string>;
 }

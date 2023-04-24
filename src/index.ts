@@ -239,6 +239,10 @@ export class Shield {
         func: string,
         label: string
     ) {
+        const shieldables = await this.getShieldables()
+        if (to !== this.contract.address && shieldables.indexOf(to) === -1) {
+            throw new Error(`${to} is not under that shield`)
+        }
         const iface = await this.getInterface(to)
         const sig = Utils.getSignature(func, iface)
         const newLabel = ethers.utils.formatBytes32String(label)
@@ -401,7 +405,13 @@ export class Shield {
         const iface = await this.getInterface(credentials.to)
         const contract = new ethers.Contract(credentials.to, iface, this.signer)
         const { func, args } = Utils.decodeCallData(credentials.call, iface)
-        return contract[func].apply(this, [...args, credentials], options)
+        const tx = await contract[func].apply(
+            this,
+            [...args, credentials],
+            options
+        )
+        await this.store.addTransaction(credentials, tx.hash)
+        return tx
     }
 
     async cancelCredentials(
@@ -424,5 +434,12 @@ export class Shield {
         return contract.executed(
             ethers.utils.keccak256(credentials.approvals[0])
         )
+    }
+
+    async getTransactionHash(credentials: Credentials): Promise<string> {
+        if (!this.isExecuted(credentials)) {
+            throw new Error(`credentials have not been executed`)
+        }
+        return this.store.getTransaction(credentials)
     }
 }

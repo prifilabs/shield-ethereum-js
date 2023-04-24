@@ -22,6 +22,7 @@ Shield getters
 -   `getAssignedPolicies(): Promise<{[address: string]: {[func: string]: string}}>`
 -   `getAssignedPolicy(to: string, func: string): Promise<string>`
 -   `isPaused(): Promise<boolean>`
+-   `getTransactionHash(credentials: Credentials): Promise<string>`
 
 Handling Interfaces
 
