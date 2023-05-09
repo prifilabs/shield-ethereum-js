@@ -6,8 +6,6 @@ import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 import '@openzeppelin/contracts/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 
-import './ShieldFactory.sol';
-
 struct Credentials {
     uint timestamp;
     uint chainid;
@@ -25,33 +23,14 @@ error InvalidCredentials(string reason);
 
 abstract contract Shieldable {
     Shield internal shield;
-    mapping(bytes32 => bool) public executed;
-    mapping(bytes32 => bool) public canceled;
 
     constructor(Shield _shield) {
         shield = _shield;
-        if (address(this) != address(shield)) {
-            shield.addShieldable(address(this));
-        }
     }
 
-    modifier checkCredentials(Credentials calldata credentials) {
-        if (shield.paused()) {
-            if (!(address(this) == address(shield) && msg.sig == 0xe8fc5b2c)) {
-                revert InvalidCredentials('The Shield is paused');
-            }
-        }
-        uint l = msg.data.length - abi.encode(credentials).length + 32;
-        shield.validateCredentials(
-            credentials,
-            msg.sender,
-            address(this),
-            msg.sig,
-            msg.data[:l],
-            true
-        );
+    modifier shielded() {
+        require(msg.sender == address(shield));
         _;
-        executed[keccak256(credentials.approvals[0])] = true;
     }
 }
 
@@ -62,7 +41,9 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
     mapping(bytes32 => bytes8[]) internal policies;
     mapping(address => mapping(bytes4 => bytes32)) internal assignments;
 
-    event ShieldableAdded(address shieldable);
+    mapping(bytes32 => bool) public executed;
+    mapping(bytes32 => bool) public canceled;
+
     event RolesAdded(bytes32[] roles);
     event UsersSet(User[] users);
     event PolicyAdded(bytes32 indexed label, bytes8[] policy);
@@ -91,24 +72,16 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
 
         // auto-administration
         _addPolicy('admin-policy', policy);
-        _assignPolicy(address(this), 0x11d5776e, 'admin-policy');
-        _assignPolicy(address(this), 0x8b2c0edd, 'admin-policy');
-        _assignPolicy(address(this), 0x91525691, 'admin-policy');
-        _assignPolicy(address(this), 0x24877e58, 'admin-policy');
-        _assignPolicy(address(this), 0x8441e0af, 'admin-policy');
-        _assignPolicy(address(this), 0xe8fc5b2c, 'admin-policy');
-        _assignPolicy(address(this), 0x73c62905, 'admin-policy');
-    }
-
-    function addShieldable(address shieldable) public {
-        emit ShieldableAdded(shieldable);
+        _assignPolicy(address(this), 0x5e7c67db, 'admin-policy');
+        _assignPolicy(address(this), 0x67eae18b, 'admin-policy');
+        _assignPolicy(address(this), 0x101970f7, 'admin-policy');
+        _assignPolicy(address(this), 0x2cfcf272, 'admin-policy');
+        _assignPolicy(address(this), 0x8456cb59, 'admin-policy');
+        _assignPolicy(address(this), 0x3f4ba83a, 'admin-policy');
     }
 
     // If you change the signature of this function, do not forget to update the function signature in the function 'initialize'
-    function addRoles(
-        bytes32[] calldata _roles,
-        Credentials calldata credentials
-    ) public checkCredentials(credentials) {
+    function addRoles(bytes32[] calldata _roles) public shielded {
         if (roles.length + _roles.length > 64)
             revert ShieldError('The Shield cannot have more than 64 roles');
         for (uint i = 0; i < _roles.length; i++) roles.push(_roles[i]);
@@ -134,10 +107,7 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
     }
 
     // If you change the signature of this function, do not forget to update the function signature in the function 'initialize'
-    function setUsers(
-        User[] memory _users,
-        Credentials calldata credentials
-    ) public checkCredentials(credentials) {
+    function setUsers(User[] memory _users) public shielded {
         _setUsers(_users);
     }
 
@@ -168,9 +138,8 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
     // If you change the signature of this function, do not forget to update the function signature in the function 'initialize'
     function addPolicy(
         bytes32 label,
-        bytes8[] calldata policy,
-        Credentials calldata credentials
-    ) public checkCredentials(credentials) {
+        bytes8[] calldata policy
+    ) public shielded {
         _addPolicy(label, policy);
     }
 
@@ -187,9 +156,8 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
     function assignPolicy(
         address to,
         bytes4 sig,
-        bytes32 label,
-        Credentials calldata credentials
-    ) public checkCredentials(credentials) {
+        bytes32 label
+    ) public shielded {
         _assignPolicy(to, sig, label);
     }
 
@@ -201,56 +169,32 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
         return policies[label];
     }
 
-    function pause(
-        Credentials calldata credentials
-    ) public checkCredentials(credentials) {
+    function pause() public shielded {
         paused = true;
         emit Paused();
     }
 
-    function unpause(
-        Credentials calldata credentials
-    ) public checkCredentials(credentials) {
+    function unpause() public shielded {
         paused = false;
         emit Unpaused();
-    }
-
-    receive() external payable {}
-
-    fallback() external payable {}
-
-    function transfer(
-        address payable _to,
-        uint256 amount,
-        Credentials calldata credentials
-    ) public payable nonReentrant checkCredentials(credentials) {
-        (bool sent, ) = _to.call{value: amount}('');
-        require(sent);
     }
 
     using ECDSA for bytes32;
 
     function validateCredentials(
         Credentials calldata credentials,
-        address sender,
-        address to,
-        bytes4 f,
-        bytes calldata call,
         bool full
     ) public view returns (address[] memory) {
         if (credentials.chainid != block.chainid) {
             revert InvalidCredentials('Chain ID mismatch');
         }
-        if (credentials.to != to) {
-            revert InvalidCredentials('Contract mismatch');
-        }
-        if (keccak256(call) != keccak256(credentials.call)) {
-            revert InvalidCredentials('Function mismatch');
-        }
         if (credentials.approvals.length == 0) {
             revert InvalidCredentials('Approvals cannot be empty');
         }
-        bytes8[] memory policy = getAssignedPolicy(to, f);
+        bytes8[] memory policy = getAssignedPolicy(
+            credentials.to,
+            bytes4(credentials.call[:4])
+        );
         if (full) {
             if (canceled[keccak256(credentials.approvals[0])]) {
                 revert InvalidCredentials('Credentials have been canceled');
@@ -293,7 +237,7 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
                 revert InvalidCredentials('Policy violation');
             }
             if (i == 0) {
-                if (signer != sender) {
+                if (signer != msg.sender) {
                     revert InvalidCredentials(
                         'The owner must be the first approver'
                     );
@@ -313,30 +257,35 @@ contract Shield is Shieldable, Initializable, ReentrancyGuard {
     }
 
     function cancelCredentials(Credentials calldata credentials) public {
-        bytes32 signerHash = keccak256(
-            abi.encode(
-                credentials.timestamp,
-                credentials.chainid,
-                credentials.to,
-                credentials.call
-            )
-        );
-        address signer = signerHash.toEthSignedMessageHash().recover(
-            credentials.approvals[0]
-        );
-        address[] memory signers = validateCredentials(
-            credentials,
-            signer,
-            credentials.to,
-            bytes4(credentials.call[:4]),
-            credentials.call,
-            false
-        );
+        address[] memory signers = validateCredentials(credentials, false);
         for (uint i = 0; i < signers.length; i++) {
             if (signers[i] == msg.sender) {
                 canceled[keccak256(credentials.approvals[0])] = true;
                 break;
             }
         }
+    }
+
+    function executeCredentials(
+        Credentials calldata credentials
+    ) public payable nonReentrant returns (bytes memory) {
+        if (paused) {
+            if (bytes4(credentials.call[:4]) == 0x8456cb59) {
+                revert InvalidCredentials('The Shield is paused');
+            }
+        }
+        validateCredentials(credentials, true);
+        (bool success, bytes memory returndata) = address(credentials.to).call{
+            value: msg.value
+        }(credentials.call);
+        if (!success) {
+            if (returndata.length == 0)
+                revert ShieldError('credentials execution error');
+            assembly {
+                revert(add(32, returndata), mload(returndata))
+            }
+        }
+        executed[keccak256(credentials.approvals[0])] = true;
+        return returndata;
     }
 }

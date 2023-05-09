@@ -93,7 +93,7 @@ describe('Shield', function () {
         })
 
         it('Should get all shieldables', async function () {
-            const { shield, alice } = context
+            const { shield } = context
             expect(await shield.getShieldables()).to.have.members([])
         })
 
@@ -143,7 +143,6 @@ describe('Shield', function () {
             //     'assignPolicy',
             //     'pause',
             //     'unpause',
-            //     'transfer',
             // ]) {
             //     console.log(await shield.contract.interface.getSighash(f));
             // };
@@ -156,7 +155,6 @@ describe('Shield', function () {
                 'assignPolicy',
                 'pause',
                 'unpause',
-                'transfer',
             ]) {
                 expect(assignments[shield.contract.address]).to.have.property(
                     Utils.getFunction(f, shield.contract.interface),
@@ -174,7 +172,6 @@ describe('Shield', function () {
                 'assignPolicy',
                 'pause',
                 'unpause',
-                'transfer',
             ]) {
                 expect(
                     await shield.getAssignedPolicy(shield.contract.address, f)
@@ -300,22 +297,6 @@ describe('Shield', function () {
             const credentials2 = await shield.approveCredentials(credentials1)
             await bobShield.executeCredentials(credentials2)
             expect(await bobShield.isPaused()).to.be.false
-        })
-
-        it('Should transfer eth', async function () {
-            const { shield, alice } = context
-            const amount = ethers.utils.parseEther('1.0')
-            await alice.sendTransaction({
-                to: shield.contract.address,
-                value: amount,
-            })
-            const credentials = await shield.createCredentialsForTransfer(
-                alice.address,
-                amount
-            )
-            expect(await shield.executeCredentials(credentials))
-                .to.changeEtherBalance(alice, amount)
-                .and.to.changeEtherBalance(shield, -amount)
         })
 
         it('Should check a credential', async function () {

@@ -11,16 +11,6 @@ export async function getShieldCreated(factory, first, last) {
     return shields
 }
 
-export async function getShieldableAdded(shield, first, last) {
-    let events = await shield.queryFilter('ShieldableAdded', first, last)
-    let shieldables = []
-    for (let event of events) {
-        const [shieldable] = event.args
-        shieldables.push(shieldable)
-    }
-    return shieldables
-}
-
 export async function getRolesAdded(shield, first, last) {
     let events = await shield.queryFilter('RolesAdded', first, last)
     let roles = []

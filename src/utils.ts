@@ -16,23 +16,6 @@ export function getSigner(types: string[], values: any[], signature: string) {
     return utils.verifyMessage(message, signature)
 }
 
-function getNullCredential() {
-    return {
-        timestamp: 0,
-        chainid: 0,
-        to: constants.AddressZero,
-        call: constants.HashZero,
-        approvals: [],
-    }
-}
-
-function getNullCredentialEncoded() {
-    return utils.defaultAbiCoder.encode(
-        ['uint', 'uint', 'address', 'bytes', 'bytes[]'],
-        [0, 0, constants.AddressZero, constants.HashZero, []]
-    )
-}
-
 export function getSignature(func, iface) {
     return iface.getSighash(func)
 }
@@ -42,18 +25,13 @@ export function getFunction(sig, iface) {
 }
 
 export function encodeCallData(func, args, iface) {
-    const call = iface.encodeFunctionData(func, [...args, getNullCredential()])
-    return call.slice(0, call.length - (getNullCredentialEncoded().length - 2))
+    return iface.encodeFunctionData(func, args)
 }
 
 export function decodeCallData(call, iface) {
     const sig = call.slice(0, 10)
     const func = iface.getFunction(sig).name
-    let args = iface.decodeFunctionData(
-        func,
-        utils.hexConcat([call, getNullCredentialEncoded()])
-    )
-    args = args.slice(0, -1)
+    let args = iface.decodeFunctionData(func, call)
     return { func, args }
 }
 

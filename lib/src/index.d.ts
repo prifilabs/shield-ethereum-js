@@ -19,9 +19,9 @@ export declare class Shield {
     store: Store.IStore;
     constructor(signer: ethers.Signer, contract: ethers.Contract);
     initStorage(storeClass?: Store.StoreClass): Promise<void>;
-    addInterface(address: string, iface: ethers.utils.Interface): Promise<void>;
-    getInterface(address: string): Promise<ethers.utils.Interface>;
+    addShieldable(address: string, iface: ethers.utils.Interface): Promise<void>;
     getShieldables(): Promise<Array<string>>;
+    getInterface(address: string): Promise<ethers.utils.Interface>;
     getRoles(): Promise<string[]>;
     createCredentialsForAddRoles(roles: string[]): Promise<Credentials>;
     getUsers(): Promise<{
@@ -47,7 +47,6 @@ export declare class Shield {
     isPaused(): Promise<boolean>;
     createCredentialsForPause(): Promise<Credentials>;
     createCredentialsForUnpause(): Promise<Credentials>;
-    createCredentialsForTransfer(to: string, amount: number): Promise<Credentials>;
     canApprove(to: string, func: string, index?: number): Promise<any>;
     getCredentials(): Promise<Array<Credentials>>;
     checkCredentials(credentials: Credentials, full?: boolean): Promise<{

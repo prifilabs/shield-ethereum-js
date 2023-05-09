@@ -6,10 +6,11 @@ import { Credentials } from './types'
 import * as Utils from './utils'
 
 export interface IStore {
-    addInterface: (
+    addShieldable: (
         address: string,
         iface: ethers.utils.Interface
     ) => Promise<void>
+    getShieldables: () => Promise<Array<string>>
     getInterface: (address: string) => Promise<ethers.utils.Interface>
     addCredentials: (credentials: Credentials) => Promise<void>
     getCredentials: () => Promise<Array<Credentials>>
@@ -28,44 +29,58 @@ export const getServerStore: StoreClass = function (network, shield) {
 }
 
 export class MemoryStore implements IStore {
-    static credentials: { [approval: string]: Credentials } = {}
-    static interfaces: { [address: string]: ethers.utils.Interface } = {}
-    static transactions: { [approval: string]: string } = {}
+    private key
+    static shields = {}
 
-    constructor(network: string, shield: string) {}
+    constructor(network: string, shield: string) {
+        this.key = shield + '@' + network
+        if (!(this.key in MemoryStore.shields)) {
+            MemoryStore.shields[this.key] = {
+                shieldables: {},
+                credentials: {},
+                transactions: {},
+            }
+        }
+    }
 
-    static setServer(server: string) {}
+    async addShieldable(address: string, iface: ethers.utils.Interface) {
+        MemoryStore.shields[this.key].shieldables[address] = iface
+    }
 
-    async addInterface(address: string, iface: ethers.utils.Interface) {
-        MemoryStore.interfaces[address] = iface
+    async getShieldables(): Promise<Array<string>> {
+        return Object.keys(MemoryStore.shields[this.key].shieldables)
     }
 
     async getInterface(address: string): Promise<ethers.utils.Interface> {
-        if (!(address in MemoryStore.interfaces)) {
+        if (!(address in MemoryStore.shields[this.key].shieldables)) {
             throw new Error(`no interface for ${address}`)
         }
-        return MemoryStore.interfaces[address]
+        return MemoryStore.shields[this.key].shieldables[address]
     }
 
     async addCredentials(credentials: Credentials) {
-        MemoryStore.credentials[credentials.approvals[0]] = credentials
+        MemoryStore.shields[this.key].credentials[credentials.approvals[0]] =
+            credentials
     }
 
     async getCredentials(): Promise<Array<Credentials>> {
-        return Object.values(MemoryStore.credentials)
+        return Object.values(MemoryStore.shields[this.key].credentials)
     }
 
     async addTransaction(credentials: Credentials, hash: string) {
-        MemoryStore.transactions[credentials.approvals[0]] = hash
+        MemoryStore.shields[this.key].transactions[credentials.approvals[0]] =
+            hash
     }
 
     async getTransaction(credentials: Credentials): Promise<string> {
-        return MemoryStore.transactions[credentials.approvals[0]]
+        return MemoryStore.shields[this.key].transactions[
+            credentials.approvals[0]
+        ]
     }
 }
 
 export class ServerStore implements IStore {
-    private interfaceCache: { [address: string]: ethers.utils.Interface }
+    private shieldablesCache: { [address: string]: ethers.utils.Interface }
     private transactionCache: { [approver: string]: string }
     private static server = 'https://shield-backend.prifilabs.com'
     private url: string
@@ -76,29 +91,34 @@ export class ServerStore implements IStore {
 
     constructor(network: string, shield: string) {
         this.url = `${ServerStore.server}/${network}/${shield}`
-        this.interfaceCache = {}
+        this.shieldablesCache = {}
         this.transactionCache = {}
     }
 
-    async addInterface(address: string, iface: ethers.utils.Interface) {
-        await fetch(`${this.url}/interfaces/${address}/`, {
+    async addShieldable(address: string, iface: ethers.utils.Interface) {
+        await fetch(`${this.url}/shieldables/${address}/`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 interface: iface.format(ethers.utils.FormatTypes.full),
             }),
         })
-        this.interfaceCache[address] = iface
+        this.shieldablesCache[address] = iface
+    }
+
+    async getShieldables(): Promise<Array<string>> {
+        const response = await fetch(`${this.url}/shieldables/`)
+        return response.json()
     }
 
     async getInterface(address: string): Promise<ethers.utils.Interface> {
-        if (address in this.interfaceCache) {
-            return this.interfaceCache[address]
+        if (address in this.shieldablesCache) {
+            return this.shieldablesCache[address]
         }
-        const response = await fetch(`${this.url}/interfaces/${address}/`)
+        const response = await fetch(`${this.url}/shieldables/${address}/`)
         const data = await response.json()
         const iface = new ethers.utils.Interface(data.interface)
-        this.interfaceCache[address] = iface
+        this.shieldablesCache[address] = iface
         return iface
     }
 

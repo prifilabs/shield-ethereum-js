@@ -11,7 +11,6 @@ import { Credentials } from './types'
 
 import {
     getShieldCreated,
-    getShieldableAdded,
     getUsersSet,
     getPolicyAdded,
     getPolicyAssigned,
@@ -91,7 +90,6 @@ export async function instantiateShield(
     let contract = new ethers.Contract(address, SHIELD_INTERFACE, signer)
     const shield = new Shield(signer, contract)
     await shield.initStorage(storeClass)
-    await shield.addInterface(shield.contract.address, SHIELD_INTERFACE)
     return shield
 }
 
@@ -117,16 +115,19 @@ export class Shield {
         this.store = storeClass(network, this.contract.address)
     }
 
-    async addInterface(address: string, iface: ethers.utils.Interface) {
-        return this.store.addInterface(address, iface)
-    }
-
-    async getInterface(address: string): Promise<ethers.utils.Interface> {
-        return this.store.getInterface(address)
+    async addShieldable(address: string, iface: ethers.utils.Interface) {
+        return this.store.addShieldable(address, iface)
     }
 
     async getShieldables(): Promise<Array<string>> {
-        return getShieldableAdded(this.contract, 0, 'latest')
+        return this.store.getShieldables()
+    }
+
+    async getInterface(address: string): Promise<ethers.utils.Interface> {
+        if (address == this.contract.address) {
+            return SHIELD_INTERFACE
+        }
+        return this.store.getInterface(address)
     }
 
     async getRoles(): Promise<string[]> {
@@ -239,10 +240,6 @@ export class Shield {
         func: string,
         label: string
     ) {
-        const shieldables = await this.getShieldables()
-        if (to !== this.contract.address && shieldables.indexOf(to) === -1) {
-            throw new Error(`${to} is not under that shield`)
-        }
         const iface = await this.getInterface(to)
         const sig = Utils.getSignature(func, iface)
         const newLabel = ethers.utils.formatBytes32String(label)
@@ -263,16 +260,6 @@ export class Shield {
 
     async createCredentialsForUnpause(): Promise<Credentials> {
         return this.createCredentials(this.contract.address, 'unpause', [])
-    }
-
-    async createCredentialsForTransfer(
-        to: string,
-        amount: number
-    ): Promise<Credentials> {
-        return this.createCredentials(this.contract.address, 'transfer', [
-            to,
-            amount,
-        ])
     }
 
     async canApprove(to: string, func: string, index?: number) {
@@ -302,23 +289,8 @@ export class Shield {
         approvals: string[]
     }> {
         full = typeof full === 'undefined' ? false : full
-        const signer = await Utils.getSigner(
-            ['uint', 'uint', 'address', 'bytes'],
-            [
-                credentials.timestamp,
-                credentials.chainid,
-                credentials.to,
-                credentials.call,
-            ],
-            credentials.approvals[0]
-        )
-        let sig = credentials.call.slice(0, 10)
         const signers = await this.contract.validateCredentials(
             credentials,
-            signer,
-            credentials.to,
-            sig,
-            credentials.call,
             full
         )
         const iface = await this.getInterface(credentials.to)
@@ -398,18 +370,14 @@ export class Shield {
         if (typeof options === 'undefined') {
             options = {}
         }
+        // console.log(await this.checkCredentials(credentials, true));
         const { approvals } = await this.checkCredentials(credentials, true)
         if (approvals.indexOf(await this.signer.getAddress()) == -1) {
             throw new Error(`signer is not one of the approvers`)
         }
-        const iface = await this.getInterface(credentials.to)
-        const contract = new ethers.Contract(credentials.to, iface, this.signer)
-        const { func, args } = Utils.decodeCallData(credentials.call, iface)
-        const tx = await contract[func].apply(
-            this,
-            [...args, credentials],
-            options
-        )
+        const tx = await this.contract
+            .connect(this.signer)
+            .executeCredentials(credentials, options)
         await this.store.addTransaction(credentials, tx.hash)
         return tx
     }
