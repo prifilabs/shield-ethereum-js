@@ -108,14 +108,6 @@ declare module "hardhat/types/runtime" {
       name: "WalletCompanion",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.WalletCompanion__factory>;
-    getContractFactory(
-      name: "WalletExampleWithoutShield",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.WalletExampleWithoutShield__factory>;
-    getContractFactory(
-      name: "WalletExampleWithShield",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.WalletExampleWithShield__factory>;
 
     getContractAt(
       name: "Initializable",
@@ -237,16 +229,6 @@ declare module "hardhat/types/runtime" {
       address: string,
       signer?: ethers.Signer
     ): Promise<Contracts.WalletCompanion>;
-    getContractAt(
-      name: "WalletExampleWithoutShield",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.WalletExampleWithoutShield>;
-    getContractAt(
-      name: "WalletExampleWithShield",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.WalletExampleWithShield>;
 
     // default types
     getContractFactory(

@@ -19,8 +19,7 @@ export declare class Shield {
     store: Store.IStore;
     constructor(signer: ethers.Signer, contract: ethers.Contract);
     initStorage(storeClass?: Store.StoreClass): Promise<void>;
-    addShieldable(address: string, iface: ethers.utils.Interface): Promise<void>;
-    getShieldables(): Promise<Array<string>>;
+    addInterface(address: string, iface: ethers.utils.Interface): Promise<void>;
     getInterface(address: string): Promise<ethers.utils.Interface>;
     getRoles(): Promise<string[]>;
     createCredentialsForAddRoles(roles: string[]): Promise<Credentials>;
@@ -37,6 +36,7 @@ export declare class Shield {
     }>;
     getPolicy(label: string): Promise<string[][]>;
     createCredentialsForAddPolicy(label: string, policy: string[][]): Promise<Credentials>;
+    getShieldables(): Promise<Array<string>>;
     getAssignedPolicies(): Promise<{
         [address: string]: {
             [func: string]: string;

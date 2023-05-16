@@ -55,7 +55,7 @@ describe('Wallet Companion', function () {
                 shield.contract.address,
                 { value: balance }
             )
-            await shield.addShieldable(wallet.address, wallet.interface)
+            await shield.addInterface(wallet.address, wallet.interface)
             context = { ...context, wallet }
         })
 

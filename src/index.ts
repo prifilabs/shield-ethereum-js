@@ -115,12 +115,8 @@ export class Shield {
         this.store = storeClass(network, this.contract.address)
     }
 
-    async addShieldable(address: string, iface: ethers.utils.Interface) {
-        return this.store.addShieldable(address, iface)
-    }
-
-    async getShieldables(): Promise<Array<string>> {
-        return this.store.getShieldables()
+    async addInterface(address: string, iface: ethers.utils.Interface) {
+        return this.store.addInterface(address, iface)
     }
 
     async getInterface(address: string): Promise<ethers.utils.Interface> {
@@ -205,6 +201,11 @@ export class Shield {
             newLabel,
             newPolicy,
         ])
+    }
+
+    async getShieldables(): Promise<Array<string>> {
+        const assignments = await getPolicyAssigned(this.contract, 0, 'latest')
+        return Object.keys(assignments)
     }
 
     async getAssignedPolicies(): Promise<{

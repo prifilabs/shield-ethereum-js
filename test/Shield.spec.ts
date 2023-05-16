@@ -94,7 +94,9 @@ describe('Shield', function () {
 
         it('Should get all shieldables', async function () {
             const { shield } = context
-            expect(await shield.getShieldables()).to.have.members([])
+            expect(await shield.getShieldables()).to.have.members([
+                shield.contract.address,
+            ])
         })
 
         it('Should get all roles', async function () {

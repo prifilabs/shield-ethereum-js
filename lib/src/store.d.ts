@@ -1,8 +1,7 @@
 import { ethers } from 'ethers';
 import { Credentials } from './types';
 export interface IStore {
-    addShieldable: (address: string, iface: ethers.utils.Interface) => Promise<void>;
-    getShieldables: () => Promise<Array<string>>;
+    addInterface: (address: string, iface: ethers.utils.Interface) => Promise<void>;
     getInterface: (address: string) => Promise<ethers.utils.Interface>;
     addCredentials: (credentials: Credentials) => Promise<void>;
     getCredentials: () => Promise<Array<Credentials>>;
@@ -16,8 +15,7 @@ export declare class MemoryStore implements IStore {
     private key;
     static shields: {};
     constructor(network: string, shield: string);
-    addShieldable(address: string, iface: ethers.utils.Interface): Promise<void>;
-    getShieldables(): Promise<Array<string>>;
+    addInterface(address: string, iface: ethers.utils.Interface): Promise<void>;
     getInterface(address: string): Promise<ethers.utils.Interface>;
     addCredentials(credentials: Credentials): Promise<void>;
     getCredentials(): Promise<Array<Credentials>>;
@@ -31,8 +29,7 @@ export declare class ServerStore implements IStore {
     private url;
     static setServer(server: string): void;
     constructor(network: string, shield: string);
-    addShieldable(address: string, iface: ethers.utils.Interface): Promise<void>;
-    getShieldables(): Promise<Array<string>>;
+    addInterface(address: string, iface: ethers.utils.Interface): Promise<void>;
     getInterface(address: string): Promise<ethers.utils.Interface>;
     addCredentials(credentials: Credentials): Promise<void>;
     getCredentials(): Promise<Array<Credentials>>;

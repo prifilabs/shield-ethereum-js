@@ -13,7 +13,6 @@
 
 Shield getters
 
--   `getShieldables(): Promise<string[]>`
 -   `getRoles(): Promise<string[]>`
 -   `getUsers(): Promise<{[address: string]: string[]}>`
 -   `getUser(address: string): Promise<string[]>`
@@ -24,8 +23,9 @@ Shield getters
 -   `isPaused(): Promise<boolean>`
 -   `getTransactionHash(credentials: Credentials): Promise<string>`
 
-Handling Interfaces
+Handling Shieldables
 
+-   `getShieldables(): Promise<string[]>`
 -   `addInterface(address: string, iface: ethers.utils.Interface)`
 -   `getInterface(address: string): Promise<ethers.utils.Interface>`
 
@@ -48,7 +48,6 @@ Handling Credentials
 -   `createCredentialsForAssignPolicy(to: address, func: string, label: string)`
 -   `createCredentialsForPause(): Promise<Credentials>`
 -   `createCredentialsForUnpause()`
--   `createCredentialsForTransfer(to: string, amount: number): Promise<Credentials>`
 
 ### Utils
 

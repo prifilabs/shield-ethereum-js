@@ -7,5 +7,3 @@ export { TestERC1155__factory } from "./TestERC1155__factory";
 export { TestERC20__factory } from "./TestERC20__factory";
 export { TestERC721__factory } from "./TestERC721__factory";
 export { WalletCompanion__factory } from "./WalletCompanion__factory";
-export { WalletExampleWithShield__factory } from "./WalletExampleWithShield__factory";
-export { WalletExampleWithoutShield__factory } from "./WalletExampleWithoutShield__factory";

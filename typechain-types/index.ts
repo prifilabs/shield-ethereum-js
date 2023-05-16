@@ -54,7 +54,3 @@ export type { TestERC721 } from "./contracts/TestERC721";
 export { TestERC721__factory } from "./factories/contracts/TestERC721__factory";
 export type { WalletCompanion } from "./contracts/WalletCompanion";
 export { WalletCompanion__factory } from "./factories/contracts/WalletCompanion__factory";
-export type { WalletExampleWithoutShield } from "./contracts/WalletExampleWithoutShield";
-export { WalletExampleWithoutShield__factory } from "./factories/contracts/WalletExampleWithoutShield__factory";
-export type { WalletExampleWithShield } from "./contracts/WalletExampleWithShield";
-export { WalletExampleWithShield__factory } from "./factories/contracts/WalletExampleWithShield__factory";
